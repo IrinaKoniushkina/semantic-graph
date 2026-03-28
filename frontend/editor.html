@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+  <title>Редактор</title>
+  <link rel="stylesheet" type="text/css" href="css/editor.css">
+</head>
+<body>
+    <div class="editor-box">
+      <div class="top-buttons">
+        <button id="mode-add" class="mode-btn active">Добавить</button>
+        <button id="mode-edit" class="mode-btn">Редактировать</button>
+      </div>
+
+      <h2 id="title">Новая вершина</h2>
+
+      <form id="form">
+        <label>Название</label>
+        <input id="name-input">
+        <div id="name-dropdown" class="dropdown"></div>
+
+        <label>Категория</label>
+        <div class="multi-select" id="category-select">
+          <input type="text" id="category-input" placeholder="Выберите категорию" autocomplete="off">
+          <div class="dropdown" id="category-dropdown"></div>
+          <div class="selected-items" id="selected-categories"></div>
+        </div>
+
+        <label>Описание</label>
+        <textarea id="desc-input"></textarea>
+
+        <label>Связи</label>
+        <input id="relation-search">
+        <div id="relation-dropdown" class="dropdown"></div>
+        <div id="selected-relations"></div>
+
+        <label>Изображения</label>
+        <input type="file" id="images-input" multiple accept="image/*">
+        <div id="image-preview"></div>
+
+        <div class="form-buttons">
+          <button id="save-btn" class="submit">Сохранить</button>
+
+          <button id="delete-btn" class="delete-btn" type="button">
+          Удалить
+          </button>
+        </div>
+      </form>
+    </div>
+
+
+    <div id="toast" class="toast">Сохранено</div>
+
+    <div id="deleteModal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" id="modalClose">✕</span>
+        <p class="modal-text">Удалить эту вершину?</p>
+        <div class="modal-buttons">
+          <button id="deleteYes" class="btn-yes">Да</button>
+          <button id="deleteNo" class="btn-no">Нет</button>
+        </div>
+      </div>
+    </div>
+  <script src="editor.js"></script>
+</body>
+</html>

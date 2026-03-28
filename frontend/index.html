@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Визуальный код города</title>
+  <link rel="stylesheet" type="text/css" href="css/main.css">
+  <!-- D3.js v7 -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+</head>
+<body>
+  <video id="bg-video" autoplay muted loop playsinline>
+    <source src="bg.mp4" type="video/mp4">
+    <source src="bg.mp4" type="video/webm">
+  </video>
+
+  <div id="graph"></div>
+  <div id="info"></div>
+  <div id="controls">
+    <div class="search-wrapper">
+      <h3>Поиск</h3>
+      <input
+        type="text"
+        id="search"
+        placeholder="Поиск..."
+      />
+      <span id="clear-search">✕</span>
+    </div>
+
+    
+    <h3>Фильтр</h3>
+    <div id="category-filters">
+      <label class="checkbox">
+      <input type="checkbox" id="select-all" checked  style="margin-bottom: 4px;">
+      <span>выбрать все</span>
+    </label>
+    </div>
+  </div>
+
+  <!-- Основная логика -->
+  <script src="main.js"></script>
+
+</body>
+</html>

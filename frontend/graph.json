@@ -1,0 +1,218 @@
+{
+  "nodes": [
+    {
+      "id": "belyy_dom",
+      "name": "Белый дом",
+      "category": [
+        "heritage"
+      ],
+      "description": "Историческое здание резиденции генерал-губернатора Восточной Сибири.",
+      "image": "images/belyy_dom.jpg"
+    },
+    {
+      "id": "reka_angara",
+      "name": "Река Ангара",
+      "category": [
+        "tourism"
+      ],
+      "description": "Главная река Иркутска, вытекающая из Байкала.",
+      "image": "images/angara.jpg"
+    },
+    {
+      "id": "naberezhnaya_angary",
+      "name": "Набережная Ангары",
+      "category": [
+        "tourism",
+        "youth"
+      ],
+      "description": "Популярное место прогулок и городских событий.",
+      "image": "images/naberezhnaya.jpg"
+    },
+    {
+      "id": "ozero_baykal",
+      "name": "Озеро Байкал",
+      "category": [
+        "tourism"
+      ],
+      "description": "Самое глубокое озеро в мире рядом с Иркутском.",
+      "image": "images/baikal.jpg"
+    },
+    {
+      "id": "irkutskaya_sloboda",
+      "name": "Иркутская слобода",
+      "category": [
+        "tourism",
+        "heritage",
+        "youth"
+      ],
+      "description": "Историко-туристический квартал с деревянной архитектурой.",
+      "image": "images/sloboda.jpg"
+    },
+    {
+      "id": "muzei_dekabristov",
+      "name": "Музей декабристов",
+      "category": [
+        "heritage"
+      ],
+      "description": "Музей, посвящённый ссыльным декабристам.",
+      "image": "images/dekabristy.jpg"
+    },
+    {
+      "id": "taltsy",
+      "name": "Тальцы",
+      "category": [
+        "tourism",
+        "heritage"
+      ],
+      "description": "Музей деревянного зодчества под открытым небом.",
+      "image": "images/taltsy.jpg"
+    },
+    {
+      "id": "listvyanka",
+      "name": "Листвянка",
+      "category": [
+        "tourism"
+      ],
+      "description": "Посёлок на берегу Байкала.",
+      "image": "images/listvyanka.jpg"
+    },
+    {
+      "id": "igu",
+      "name": "ИГУ",
+      "category": [
+        "youth"
+      ],
+      "description": "Крупнейший университет региона.",
+      "image": "images/igu.jpg"
+    },
+    {
+      "id": "planetariy",
+      "name": "Планетарий",
+      "category": [
+        "youth",
+        "tourism"
+      ],
+      "description": "Образовательный и научно-популярный центр.",
+      "image": "images/planetariy.jpg"
+    },
+    {
+      "id": "tsentralnyy_rynok",
+      "name": "Центральный рынок",
+      "category": [
+        "youth",
+        "tourism"
+      ],
+      "description": "Гастрономический и социальный центр города.",
+      "image": "images/rynok.jpg"
+    },
+    {
+      "id": "teatr_okhlopkova",
+      "name": "Театр Охлопкова",
+      "category": [
+        "youth",
+        "heritage"
+      ],
+      "description": "Главный драматический театр Иркутска.",
+      "image": "images/teatr.jpg"
+    },
+    {
+      "id": "ledokol_angara",
+      "name": "Ледокол Ангара",
+      "category": [
+        "tourism",
+        "heritage"
+      ],
+      "description": "Историческое судно-музей.",
+      "image": "images/ledokol.jpg"
+    },
+    {
+      "id": "tunkinskiy_natsionalnyy_park",
+      "name": "Тункинский национальный парк",
+      "category": [
+        "tourism"
+      ],
+      "description": "Природный парк с горами и минеральными источниками.",
+      "image": "images/tunka.jpg"
+    },
+    {
+      "id": "1774190148945",
+      "name": "Ирниту",
+      "category": [
+        "youth",
+        "tourism"
+      ],
+      "description": "skfjvnfsekjgne;rlk",
+      "images": []
+    },
+    {
+      "id": "1774191338649",
+      "name": "Яков Похабов",
+      "category": [
+        "youth"
+      ],
+      "description": "",
+      "images": []
+    },
+    {
+      "id": "1774193747290",
+      "name": "бгу",
+      "category": [],
+      "description": "асненаенпамноипдшгридшргшдрт",
+      "images": []
+    }
+  ],
+  "edges": [
+    {
+      "source": "belyy_dom",
+      "target": "muzei_dekabristov"
+    },
+    {
+      "source": "reka_angara",
+      "target": "ozero_baykal"
+    },
+    {
+      "source": "naberezhnaya_angary",
+      "target": "reka_angara"
+    },
+    {
+      "source": "irkutskaya_sloboda",
+      "target": "tsentralnyy_rynok"
+    },
+    {
+      "source": "taltsy",
+      "target": "listvyanka"
+    },
+    {
+      "source": "listvyanka",
+      "target": "ozero_baykal"
+    },
+    {
+      "source": "igu",
+      "target": "planetariy"
+    },
+    {
+      "source": "teatr_okhlopkova",
+      "target": "igu"
+    },
+    {
+      "source": "ledokol_angara",
+      "target": "reka_angara"
+    },
+    {
+      "source": "tunkinskiy_natsionalnyy_park",
+      "target": "listvyanka"
+    },
+    {
+      "id": "edge_1774190667130_0.2580573252357701",
+      "source": "1774190148945",
+      "target": "igu",
+      "type": "related"
+    },
+    {
+      "id": "edge_1774193747307_0.03288139951424396",
+      "source": "1774193747290",
+      "target": "igu",
+      "type": "related"
+    }
+  ]
+}
