@@ -9,8 +9,6 @@ const PORT = 5000
 const multer = require("multer")
 const upload = multer({ storage: multer.memoryStorage() })
 
-const minioClient = require("./minioClient")
-
 app.use(cors())
 app.use(express.json())
 
@@ -22,17 +20,17 @@ const DATA_FILE = path.join(__dirname, "../frontend/graph.json")
 
 function readData() {
 
-if (!fs.existsSync(DATA_FILE)) {
-return { nodes: [], edges: [] }
-}
+  if (!fs.existsSync(DATA_FILE)) {
+    return { nodes: [], edges: [] }
+  }
 
-const raw = fs.readFileSync(DATA_FILE)
+  const raw = fs.readFileSync(DATA_FILE)
 
-try {
-return JSON.parse(raw)
-} catch {
-return { nodes: [], edges: [] }
-}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return { nodes: [], edges: [] }
+  }
 
 }
 
@@ -42,11 +40,11 @@ return { nodes: [], edges: [] }
 
 function writeData(data) {
 
-fs.writeFileSync(
-DATA_FILE,
-JSON.stringify(data, null, 2),
-"utf8"
-)
+  fs.writeFileSync(
+    DATA_FILE,
+    JSON.stringify(data, null, 2),
+    "utf8"
+  )
 
 }
 
@@ -56,9 +54,9 @@ JSON.stringify(data, null, 2),
 
 app.get("/places", (req, res) => {
 
-const data = readData()
+  const data = readData()
 
-res.json(data)
+  res.json(data)
 
 })
 
@@ -68,64 +66,64 @@ res.json(data)
 
 app.post("/places", (req, res) => {
 
-const { node, relatedIds, mode } = req.body
+  const { node, relatedIds, mode } = req.body
 
-if (!node || !node.id || !node.name) {
-return res.status(400).json({ error: "Некорректные данные" })
-}
+  if (!node || !node.id || !node.name) {
+    return res.status(400).json({ error: "Некорректные данные" })
+  }
 
-const data = readData()
+  const data = readData()
 
-if (!data.nodes) data.nodes = []
-if (!data.edges) data.edges = []
+  if (!data.nodes) data.nodes = []
+  if (!data.edges) data.edges = []
 
-/* ---------- РЕДАКТИРОВАНИЕ ---------- */
+  /* ---------- РЕДАКТИРОВАНИЕ ---------- */
 
-if (mode === "edit") {
+  if (mode === "edit") {
 
-const index = data.nodes.findIndex(n => n.id === node.id)
+    const index = data.nodes.findIndex(n => n.id === node.id)
 
-if (index === -1) {
-return res.status(404).json({ error: "Вершина не найдена" })
-}
+    if (index === -1) {
+      return res.status(404).json({ error: "Вершина не найдена" })
+    }
 
-data.nodes[index] = node
+    data.nodes[index] = node
 
-// удаляем старые связи
-data.edges = data.edges.filter(e =>
-e.source !== node.id && e.target !== node.id
-)
+    // удаляем старые связи
+    data.edges = data.edges.filter(e =>
+      e.source !== node.id && e.target !== node.id
+    )
 
-}
+  }
 
-/* ---------- ДОБАВЛЕНИЕ ---------- */
+  /* ---------- ДОБАВЛЕНИЕ ---------- */
 
-else {
+  else {
 
-data.nodes.push(node)
+    data.nodes.push(node)
 
-}
+  }
 
-/* ---------- СОЗДАЕМ НОВЫЕ СВЯЗИ ---------- */
+  /* ---------- СОЗДАЕМ НОВЫЕ СВЯЗИ ---------- */
 
-if (Array.isArray(relatedIds)) {
+  if (Array.isArray(relatedIds)) {
 
-relatedIds.forEach(relId => {
+    relatedIds.forEach(relId => {
 
-data.edges.push({
-id: "edge_" + Date.now() + "_" + Math.random(),
-source: node.id,
-target: relId,
-type: "related"
-})
+      data.edges.push({
+        id: "edge_" + Date.now() + "_" + Math.random(),
+        source: node.id,
+        target: relId,
+        type: "related"
+      })
 
-})
+    })
 
-}
+  }
 
-writeData(data)
+  writeData(data)
 
-res.json({ success: true })
+  res.json({ success: true })
 
 })
 
@@ -135,21 +133,21 @@ res.json({ success: true })
 
 app.delete("/places/:id", (req, res) => {
 
-const id = req.params.id
+  const id = req.params.id
 
-const data = readData()
+  const data = readData()
 
-// удаляем вершину
-data.nodes = data.nodes.filter(n => n.id !== id)
+  // удаляем вершину
+  data.nodes = data.nodes.filter(n => n.id !== id)
 
-// удаляем связи
-data.edges = data.edges.filter(e =>
-e.source !== id && e.target !== id
-)
+  // удаляем связи
+  data.edges = data.edges.filter(e =>
+    e.source !== id && e.target !== id
+  )
 
-writeData(data)
+  writeData(data)
 
-res.json({ success: true })
+  res.json({ success: true })
 
 })
 
@@ -181,6 +179,6 @@ app.post("/upload-images", upload.array("images"), async (req, res) => {
 
 app.listen(PORT, () => {
 
-console.log("Server running on http://localhost:" + PORT)
+  console.log("Server running on http://localhost:" + PORT)
 
 })

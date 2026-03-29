@@ -1,24 +1,7 @@
-// -----------------------------
-// НАСТРОЙКИ
-// -----------------------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 const margin = 40;
 
-const categoryColors = {
-  "архитектура": "#00c3ff",
-  "транспорт": "#9124eb",
-  "здоровье": "#f07f23",
-  "туризм": "#e9ec25",
-  "культура": "#f53fb8",
-  "экология": "#1dc942",
-  "экономика": "#e9323b",
-  "образование": "#4476ff",
-};
-
-// -----------------------------
-// SVG
-// -----------------------------
 const svg = d3.select("#graph")
   .append("svg")
   .attr("width", width)
@@ -34,42 +17,25 @@ const centerX = width / 2;
 const centerY = height / 2;
 const circleRadius = Math.min(width, height) * 0.35;
 
-
-// -----------------------------
-// ЗАГРУЗКА ДАННЫХ
-// -----------------------------
+// ЗАГРУЗКА
 fetch("http://localhost:5000/places")
   .then(res => res.json())
   .then(data => initGraph(data));
 
-
-// -----------------------------
 // ГРАФ
-// -----------------------------
 function initGraph(data) {
 
   const simulation = d3.forceSimulation(data.nodes)
-    .force("link", d3.forceLink(data.edges)
-      .id(d => d.id)
-      .distance(120)
-    )
+    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(120))
     .force("charge", d3.forceManyBody().strength(-200))
-    .force("collision", d3.forceCollide()
-      .radius(d => d.collisionRadius)
-      .strength(0.7)
-    )
-    .force("radial", d3.forceRadial(circleRadius, centerX, centerY)
-      .strength(0.05)
-    )
+    .force("collision", d3.forceCollide().radius(d => d.collisionRadius).strength(0.7))
+    .force("radial", d3.forceRadial(circleRadius, centerX, centerY).strength(0.05))
     .force("center", d3.forceCenter(centerX, centerY))
     .force("alignY", d3.forceY(centerY).strength(0.03));
 
   simulation.alphaTarget(0.1).restart();
 
-
-  // -----------------------------
   // РЁБРА
-  // -----------------------------
   const edges = linkGroup
     .selectAll("line")
     .data(data.edges)
@@ -77,30 +43,25 @@ function initGraph(data) {
     .append("line")
     .attr("stroke", "#cccccc");
 
-  // -----------------------------
   // ВЕРШИНЫ
-  // -----------------------------
   const nodes = nodeGroup
-    .selectAll("circle")
+    .selectAll("image")
     .data(data.nodes)
     .enter()
-    .append("circle")
-    .attr("r", 8)
-    .attr("fill", d => {
-  const mainCategory = d.category[0];
-  return categoryColors[mainCategory] || "#999";
-})
-    .call(
-      d3.drag()
-        .on("start", dragStarted)
-        .on("drag", dragged)
-        .on("end", dragEnded)
+    .append("image")
+    .attr("xlink:href", d => d.icon || "icons/default.png")
+    .attr("width", 25)
+    .attr("height", 25)
+    .attr("x", -16)
+    .attr("y", -16)
+    .call(d3.drag()
+      .on("start", dragStarted)
+      .on("drag", dragged)
+      .on("end", dragEnded)
     )
     .on("click", nodeClicked);
 
-  // -----------------------------
   // ПОДПИСИ
-  // -----------------------------
   const labels = nodeGroup
     .selectAll("text")
     .data(data.nodes)
@@ -109,68 +70,15 @@ function initGraph(data) {
     .text(d => d.name)
     .attr("font-size", "11px")
     .attr("text-anchor", "middle")
-    .attr("dy", "-0.9em")
+    .attr("dy", "-2.5em")
     .attr("pointer-events", "none");
 
-  //-------КАТЕГОРИИ И ПОИСК-------
-
-  const categories = Array.from(
-  new Set(
-    data.nodes.flatMap(d => d.category)
-  ));
-
-  const filterContainer = d3.select("#category-filters");
-
-  categories.forEach(cat => {
-    const label = filterContainer.append("label");
-
-    label.append("input")
-      .attr("type", "checkbox")
-      .attr("checked", true)
-      .attr("value", cat)
-      .on("change", updateFilters);
-
-    label.append("span")
-      .text(cat);
-  });
-
-  d3.select("#select-all").on("change", function () {
-    const checked = this.checked;
-
-    d3.selectAll(
-      "#category-filters input[type='checkbox']:not(#select-all)"
-    )
-      .property("checked", checked);
-
-    updateFilters();
-  });
-
-  d3.selectAll(
-    "#category-filters input[type='checkbox']:not(#select-all)"
-  )
-    .on("change", function () {
-
-      const all = d3.selectAll(
-        "#category-filters input[type='checkbox']:not(#select-all)"
-      ).nodes();
-
-      const allChecked = all.every(cb => cb.checked);
-
-      d3.select("#select-all")
-        .property("checked", allChecked);
-
-      updateFilters();
-    });
-
+  // ПОИСК
   const searchInput = d3.select("#search");
   const clearBtn = d3.select("#clear-search");
 
   searchInput.on("input", function () {
-    clearBtn.style(
-      "display",
-      this.value.length > 0 ? "block" : "none"
-    );
-
+    clearBtn.style("display", this.value ? "block" : "none");
     updateFilters();
   });
 
@@ -180,49 +88,112 @@ function initGraph(data) {
     updateFilters();
   });
 
-  function isNodeActive(node, activeCategories, query){
-    const matchCategory = node.category.some(cat => activeCategories.has(cat));
+  // DROPDOWN ФИЛЬТР
+  const filterToggle = document.getElementById("filter-toggle");
+  const filterMenu = document.getElementById("filter-menu");
+  const filterCheckboxes = filterMenu.querySelectorAll("input");
+
+  let selectedCategories = new Set(["all"]);
+
+  filterToggle.onclick = () => {
+    filterMenu.style.display =
+      filterMenu.style.display === "block" ? "none" : "block";
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".filter-dropdown")) {
+      filterMenu.style.display = "none";
+    }
+  });
+
+  filterCheckboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+
+      const value = cb.value;
+
+      if (value === "all") {
+        selectedCategories = new Set(["all"]);
+        filterCheckboxes.forEach(c => {
+          c.checked = c.value === "all";
+        });
+      } else {
+
+        selectedCategories.delete("all");
+        filterCheckboxes[0].checked = false;
+
+        if (cb.checked) {
+          selectedCategories.add(value);
+        } else {
+          selectedCategories.delete(value);
+        }
+
+        const realCategories = ["culture", "youth", "tourism"];
+        const allSelected = realCategories.every(cat =>
+          selectedCategories.has(cat)
+        );
+        if (allSelected) {
+          selectedCategories = new Set(["all"]);
+          filterCheckboxes.forEach(c => {
+            c.checked = c.value === "all";
+          });
+        }
+        if (selectedCategories.size === 0) {
+          selectedCategories = new Set(["all"]);
+          filterCheckboxes[0].checked = true;
+        }
+      }
+      updateFilterLabel();
+      updateFilters();
+      filterMenu.style.display = "none";
+    });
+      filterToggle.addEventListener("click", () => {
+      const isOpen = filterMenu.style.display === "block";
+      filterMenu.style.display = isOpen ? "none" : "block";
+      document.querySelector(".filter-dropdown")
+        .classList.toggle("open", !isOpen);
+    });
+  });
+
+  function updateFilterLabel() {
+    if (selectedCategories.has("all")) {
+      filterToggle.textContent = "Все";
+      return;
+    }
+    const map = {
+      culture: "Культура",
+      youth: "Молодежь",
+      tourism: "Туризм"
+    };
+    const names = Array.from(selectedCategories).map(c => map[c]);
+    filterToggle.textContent = names.join(", ");
+  }
+
+  // ФИЛЬТРАЦИЯ
+  function isNodeActive(node, query) {
+
+    const matchCategory = selectedCategories.has("all") ||
+      node.category.some(cat => selectedCategories.has(cat));
     const matchText = node.name.toLowerCase().includes(query);
     return matchCategory && matchText;
   }
 
   function updateFilters() {
-    const activeCategories = new Set(
-      d3.selectAll("#category-filters input:checked")
-        .nodes()
-        .map(n => n.value)
-    );
+    const query = searchInput.property("value").toLowerCase();
+    nodes.style("opacity", d => isNodeActive(d, query) ? 1 : 0.1);
 
-    const query = d3.select("#search")
-      .property("value")
-      .toLowerCase();
-
-    nodes.style("opacity", d =>
-      isNodeActive(d, activeCategories, query) ? 1 : 0.15
-    );
-
-    labels.style("opacity", d =>
-      isNodeActive(d, activeCategories, query) ? 1 : 0.15
-    );
+    labels.style("opacity", d => isNodeActive(d, query) ? 1 : 0.1);
 
     edges.style("opacity", d => {
-      const sourceActive = isNodeActive(d.source, activeCategories, query);
-      const targetActive = isNodeActive(d.target, activeCategories, query);
-
-      return sourceActive && targetActive ? 1 : 0.05;
+      const s = isNodeActive(d.source, query);
+      const t = isNodeActive(d.target, query);
+      return s && t ? 1 : 0.05;
     });
   }
 
+  
 
-  // -----------------------------
   // ТИК
-  // -----------------------------
   simulation.on("tick", () => {
-
-    data.nodes.forEach(d => {
-      d.x = Math.max(margin, Math.min(width - margin, d.x));
-      d.y = Math.max(margin, Math.min(height - margin, d.y));
-    });
 
     edges
       .attr("x1", d => d.source.x)
@@ -231,39 +202,15 @@ function initGraph(data) {
       .attr("y2", d => d.target.y);
 
     nodes
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y);
+      .attr("x", d => d.x - 16)
+      .attr("y", d => d.y - 16);
 
     labels
       .attr("x", d => d.x)
       .attr("y", d => d.y);
   });
 
-
-  // -----------------------------
-  // КЛИК ПО ФОНУ
-  // -----------------------------
-  svg.on("click", () => {
-
-    nodes.attr("fill", d => {
-  const mainCategory = d.category[0];
-  return categoryColors[mainCategory] || "#999";
-});
-    edges.attr("stroke", "#cccccc");
-
-    infoPanel
-      .transition()
-      .duration(300)
-      .style("opacity", 0)
-      .on("end", () => infoPanel.style("display", "none"));
-
-    shiftGraph(false);
-  });
-
-
-  // -----------------------------
   // КЛИК ПО ВЕРШИНЕ
-  // -----------------------------
   function nodeClicked(event, node) {
 
     event.stopPropagation();
@@ -274,7 +221,6 @@ function initGraph(data) {
       .html(`
         <div class="info-header">
           <h2>${node.name}</h2>
-          <div class="category">${node.category.join(", ")}</div>
         </div>
 
         <div class="tabs">
@@ -299,20 +245,24 @@ function initGraph(data) {
 
         </div>
       `);
-
     setTimeout(() => infoPanel.style("opacity", 1), 10);
-
     shiftGraph(true);
-
     initTabs();
-
-    highlight(node);
   }
 
+  // КЛИК ПО ФОНУ
+  svg.on("click", () => {
+    infoPanel
+      .transition()
+      .duration(300)
+      .style("opacity", 0)
+      .on("end", () => infoPanel.style("display", "none"));
 
-  // -----------------------------
+    shiftGraph(false);
+
+  });
+
   // ГАЛЕРЕЯ
-  // -----------------------------
   function renderGallery(images) {
 
     if (!images || images.length === 0) {
@@ -328,10 +278,7 @@ function initGraph(data) {
     `;
   }
 
-
-  // -----------------------------
   // ОПИСАНИЕ
-  // -----------------------------
   function formatDescription(text) {
 
     if (!text) return "";
@@ -347,10 +294,7 @@ function initGraph(data) {
       .join("");
   }
 
-
-  // -----------------------------
   // СВЯЗАННЫЕ
-  // -----------------------------
   function renderRelated(node) {
 
     const related = data.edges
@@ -368,121 +312,65 @@ function initGraph(data) {
     `;
   }
 
-
-  // -----------------------------
   // ТАБЫ
-  // -----------------------------
   function initTabs() {
-
     const tabs = document.querySelectorAll(".tab");
     const panes = document.querySelectorAll(".tab-pane");
-
     tabs.forEach(tab => {
-
       tab.onclick = () => {
-
         tabs.forEach(t => t.classList.remove("active"));
         panes.forEach(p => p.classList.remove("active"));
-
         tab.classList.add("active");
-
         const id = tab.dataset.tab;
-
         document.getElementById(id).classList.add("active");
-
       };
-
     });
-
   }
-
-
-  // -----------------------------
-  // ПОДСВЕТКА
-  // -----------------------------
-  function highlight(node) {
-
-    nodes.attr("fill", d => {
-  const mainCategory = d.category[0];
-
-  return d === node || isConnected(node, d)
-    ? categoryColors[mainCategory] || "#999"
-    : "#eee";
-});
-
-    edges.attr("stroke", d =>
-      d.source === node || d.target === node
-        ? "#999"
-        : "#eee"
-    );
-
-  }
-
 
   function isConnected(a, b) {
-
     return data.edges.some(l =>
       (l.source === a && l.target === b) ||
       (l.source === b && l.target === a)
     );
-
   }
 
-
-  // -----------------------------
   // СМЕЩЕНИЕ ГРАФА
-  // -----------------------------
+  let graphOffsetX = 0;
+
   function shiftGraph(open) {
 
-    const shift = open ? -260 : 0;
+    graphOffsetX = open ? -260 : 0;
 
     graphGroup
       .transition()
       .duration(600)
       .ease(d3.easeCubicOut)
-      .attr("transform", `translate(${shift},0)`);
-
+      .attr("transform", `translate(${graphOffsetX},0)`);
   }
 
-
-  // -----------------------------
   // DRAG
-  // -----------------------------
   function dragStarted(event, d) {
-
     if (!event.active) simulation.alphaTarget(0.3).restart();
-
-    d.fx = d.x;
-    d.fy = d.y;
-
+    d.fx = Math.max(margin - graphOffsetX, Math.min(width - margin - graphOffsetX, d.x));
+    d.fy = Math.max(margin, Math.min(height - margin, d.y));
   }
-
   function dragged(event, d) {
-
-    d.fx = event.x;
-    d.fy = event.y;
-
+    const left = margin - graphOffsetX;
+    const right = width - margin - graphOffsetX;
+    d.fx = Math.max(left, Math.min(right, event.x));
+    d.fy = Math.max(margin, Math.min(height - margin, event.y));
   }
-
   function dragEnded(event, d) {
-
     if (!event.active) simulation.alphaTarget(0);
-
     d.fx = null;
     d.fy = null;
 
   }
-
 }
 
-
-// -----------------------------
 // RESIZE
-// -----------------------------
 window.addEventListener("resize", () => {
-
   svg
     .attr("width", window.innerWidth)
     .attr("height", window.innerHeight);
-
 });
