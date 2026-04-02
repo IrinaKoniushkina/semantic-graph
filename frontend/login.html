@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Вход</title>
+    <link rel="stylesheet" href="css/editor.css">
+</head>
+<style>
+    .editor-box {
+        width: 400px;
+    }
+
+    .password {
+        position: relative;
+    }
+
+    .password-control {
+        position: absolute;
+        top: 60%;
+        right: 20px;
+        transform: translateY(-50%);
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        background: url("icons/no-view.png") no-repeat center;
+        background-size: contain;
+        cursor: pointer;
+    }
+
+    .password-control.view {
+        background: url("icons/view.png") no-repeat center;
+        background-size: contain;
+    }
+
+    .login-error {
+        color: #ad0304;
+        font-size: 16px;
+        margin-bottom: 10px;
+        min-height: 18px;
+        font-weight: 700;
+    }
+    .sign-up{
+        margin-bottom: 5px;
+        text-align: center;
+    }
+    .submit{
+        position: relative;
+        left: 35%;
+    }
+</style>
+
+<body>
+    <div class="editor-box">
+        <h2 class="sign-up">Вход для редактора</h2>
+        <div id="login-error" class="login-error"></div>
+        <form id="login-form">
+
+            <label>Логин</label>
+            <input id="login" placeholder="Введите логин">
+
+            <label>Пароль</label>
+            <div class="password">
+                <input type="password" id="password-input" placeholder="Введите пароль" name="password">
+                <a href="#" class="password-control" id="password-control"></a>
+            </div>
+            <button class="submit">Войти</button>
+        </form>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+
+</html>

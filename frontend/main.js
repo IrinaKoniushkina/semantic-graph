@@ -17,6 +17,19 @@ const centerX = width / 2;
 const centerY = height / 2;
 const circleRadius = Math.min(width, height) * 0.35;
 
+const categoryBackgrounds = {
+  all: "url('images/графBG.png')",
+  культура: "url('images/cultureBG.png')",
+  молодежь: "url('images/youthBG.png')",
+  туризм: "url('images/tourismBg.png')"
+};
+
+const bg1 = document.getElementById("bg1");
+const bg2 = document.getElementById("bg2");
+
+let activeBg = bg1;
+let hiddenBg = bg2;
+
 // ЗАГРУЗКА
 fetch("http://localhost:5000/places")
   .then(res => res.json())
@@ -94,6 +107,7 @@ function initGraph(data) {
   const filterCheckboxes = filterMenu.querySelectorAll("input");
 
   let selectedCategories = new Set(["all"]);
+  let lastSelectedCategory = "all";
 
   filterToggle.onclick = () => {
     filterMenu.style.display =
@@ -113,6 +127,7 @@ function initGraph(data) {
 
       if (value === "all") {
         selectedCategories = new Set(["all"]);
+        lastSelectedCategory = "all"
         filterCheckboxes.forEach(c => {
           c.checked = c.value === "all";
         });
@@ -127,7 +142,7 @@ function initGraph(data) {
           selectedCategories.delete(value);
         }
 
-        const realCategories = ["culture", "youth", "tourism"];
+        const realCategories = ["культура", "молодежь", "туризм"];
         const allSelected = realCategories.every(cat =>
           selectedCategories.has(cat)
         );
@@ -142,11 +157,21 @@ function initGraph(data) {
           filterCheckboxes[0].checked = true;
         }
       }
+
+      if (cb.checked && cb.value !== "all") {
+        lastSelectedCategory = cb.value;
+      }
+      if (!cb.checked && cb.value === lastSelectedCategory) {
+        const remaining = Array.from(selectedCategories);
+        lastSelectedCategory = remaining.length ? remaining[remaining.length - 1] : "all";
+      }
+
       updateFilterLabel();
       updateFilters();
+      updateBackground();
       filterMenu.style.display = "none";
     });
-      filterToggle.addEventListener("click", () => {
+    filterToggle.addEventListener("click", () => {
       const isOpen = filterMenu.style.display === "block";
       filterMenu.style.display = isOpen ? "none" : "block";
       document.querySelector(".filter-dropdown")
@@ -160,12 +185,23 @@ function initGraph(data) {
       return;
     }
     const map = {
-      culture: "Культура",
-      youth: "Молодежь",
-      tourism: "Туризм"
+      культура: "Культура",
+      молодежь: "Молодежь",
+      туризм: "Туризм"
     };
     const names = Array.from(selectedCategories).map(c => map[c]);
     filterToggle.textContent = names.join(", ");
+  }
+
+  function updateBackground() {
+    let bg = categoryBackgrounds["all"];
+    if (!selectedCategories.has("all")) {
+      bg = categoryBackgrounds[lastSelectedCategory] || bg;
+    }
+    hiddenBg.style.backgroundImage = bg;
+    hiddenBg.classList.add("active");
+    activeBg.classList.remove("active");
+    [activeBg, hiddenBg] = [hiddenBg, activeBg];
   }
 
   // ФИЛЬТРАЦИЯ
@@ -189,8 +225,6 @@ function initGraph(data) {
       return s && t ? 1 : 0.05;
     });
   }
-
-  
 
   // ТИК
   simulation.on("tick", () => {
@@ -248,6 +282,18 @@ function initGraph(data) {
     setTimeout(() => infoPanel.style("opacity", 1), 10);
     shiftGraph(true);
     initTabs();
+    document.querySelectorAll(".related-item").forEach(item => {
+      item.onclick = (e) => {
+
+        const id = item.dataset.id;
+
+        const targetNode = data.nodes.find(n => n.id == id);
+
+        if (targetNode) {
+          nodeClicked(e, targetNode);
+        }
+      };
+    });
   }
 
   // КЛИК ПО ФОНУ
@@ -294,7 +340,7 @@ function initGraph(data) {
       .join("");
   }
 
-  // СВЯЗАННЫЕ
+  // СВЯЗАННЫЕ ВЕРШИНЫ
   function renderRelated(node) {
 
     const related = data.edges
@@ -306,7 +352,9 @@ function initGraph(data) {
     return `
       <ul class="related-list">
         ${related.map(r => `
-          <li class="related-item">${r.name}</li>
+          <li class="related-item" data-id="${r.id}">
+            ${r.name}
+          </li>
         `).join("")}
       </ul>
     `;
@@ -366,6 +414,9 @@ function initGraph(data) {
     d.fy = null;
 
   }
+  updateBackground();
+  bg1.style.backgroundImage = categoryBackgrounds["all"];
+  bg1.classList.add("active");
 }
 
 // RESIZE

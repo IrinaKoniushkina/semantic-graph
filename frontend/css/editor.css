@@ -284,7 +284,7 @@ button.submit {
   cursor: pointer;
   background: rgba(255,255,255,0.7);
   transition: 0.2s;
-  margin: 4px;
+  margin-top: 0px;
 }
 
 .upload-icon {
@@ -305,7 +305,7 @@ button.submit {
 }
 .icon-picker {
   display: flex;
-  gap: 10px;
+  gap: 11px;
   margin-top: 10px;
 }
 
@@ -321,4 +321,19 @@ button.submit {
 .icon-picker img.active {
   border: 2px solid #5D474E;
   background: #eee;
+}
+
+.tooltip {
+  position: fixed;
+  background: rgba(93,71,78,0.85);
+  color: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 220px;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: pre-line;
 }

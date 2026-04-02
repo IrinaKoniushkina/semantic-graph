@@ -5,8 +5,23 @@
       width: 100%;
       height: 100%;
       font-family: "Century Gothic";
-      background: url("/frontend/images/графBG.png") center/cover no-repeat;
       overflow: hidden;
+    }
+    .bg-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .bg-layer.active {
+      opacity: 1;
     }
 
     #graph {
@@ -43,6 +58,7 @@
       font-size: 14px;
       line-height: 1.4;
       white-space: pre-line;
+      text-align: justify;
     }
 
     .info-header {
@@ -52,14 +68,15 @@
 
     .image-gallery {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
     }
 
     .gallery-img {
       width: 100%;
-      height: 90px;
+      height: 120px;
       object-fit: cover;
+      border-radius: 5px;
     }
 
     .image-wrapper {
@@ -111,17 +128,6 @@
       padding: 6px 26px 6px 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
-    }
-
-    #clear-search {
-      position: absolute;
-      right: 15px;
-      top: 74%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      font-size: 14px;
-      color: #999;
-      display: none;
     }
 
     #clear-search:hover {
@@ -233,8 +239,12 @@
     #clear-search {
       position: absolute;
       right: 8px;
-      top: 50%;
+      top: 71%;
       transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 14px;
+      color: #999;
+      display: none;
     }
 
     .filter-dropdown {

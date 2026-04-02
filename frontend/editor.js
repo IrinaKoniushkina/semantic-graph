@@ -1,3 +1,12 @@
+if (localStorage.getItem("auth") !== "true") {
+  window.location.href = "login.html";
+}
+
+document.getElementById("logout-btn").onclick = () => {
+  localStorage.removeItem("auth");
+  window.location.href = "login.html";
+};
+
 let mode = "add"
 
 let allNodes = []
@@ -22,6 +31,22 @@ const descInput = document.getElementById("desc-input")
 let selectedIcon = "icons/default.png";
 const iconPicker = document.getElementById("icon-picker");
 
+const tooltip = document.createElement("div");
+tooltip.className = "tooltip";
+document.body.appendChild(tooltip);
+
+const iconDescriptions = {
+  "icons/parthenon.png": "Музеи, театры, библиотеки и др.",
+  "icons/church.png": "Церкви, храмы, соборы и др.",
+  "icons/nature.png": "Природные зоны, Листвянка, Байкал и др.",
+  "icons/monument.png": "Памятники, монументы и др.",
+  "icons/buildings.png": "Инфрастукутура города, мосты, улицы и др.",
+  "icons/user.png": "Исторические личности, писатели и др."
+};
+
+let existingImages = [];
+let newImages = [];   
+
 const imagesInput = document.getElementById("images-input")
 const preview = document.getElementById("image-preview")
 
@@ -44,7 +69,7 @@ const modalClose = document.getElementById("modalClose")
 
 const toast = document.getElementById("toast")
 
-/* загрузка данных */
+// ЗАГРУЗКА ДАННЫХ
 async function loadNodes() {
     const res = await fetch("http://localhost:5000/places")
     const data = await res.json()
@@ -54,25 +79,23 @@ async function loadNodes() {
 loadNodes()
 
 
-/* загрузка изображений */
+// ЗАГРУЗКА ИЗОБРАЖЕНИЙ
 async function uploadImages() {
-    const files = imagesInput.files
-    if (files.length === 0) return []
-    const formData = new FormData()
-    for (let file of files) {
-        formData.append("images", file)
+    if (newImages.length === 0) return [];
+    const formData = new FormData();
+    for (let file of newImages) {
+        formData.append("images", file);
     }
     const res = await fetch("http://localhost:5000/upload-images", {
         method: "POST",
         body: formData
-    })
-    const data = await res.json()
-    return data.images
+    });
+    const data = await res.json();
+    return data.images;
 }
-/*иконки*/
+// ИКОНКИ
 iconPicker.querySelectorAll("img").forEach(img => {
     img.onclick = () => {
-
         selectedIcon = img.dataset.icon;
 
         iconPicker.querySelectorAll("img")
@@ -80,9 +103,23 @@ iconPicker.querySelectorAll("img").forEach(img => {
 
         img.classList.add("active");
     };
+// ТУЛТИПЫ
+    img.onmouseenter = (e) => {
+        const text = iconDescriptions[img.dataset.icon] || "";
+
+        tooltip.textContent = text;
+        tooltip.style.opacity = "1";
+    };
+    img.onmousemove = (e) => {
+        tooltip.style.left = e.clientX + 15 + "px";
+        tooltip.style.top = e.clientY + 15 + "px";
+    };
+    img.onmouseleave = () => {
+        tooltip.style.opacity = "0";
+    };
 });
 
-/*    режимы    */
+//РЕЖИМЫ
 btnEdit.onclick = () => {
     clearForm()
     mode = "edit"
@@ -107,7 +144,7 @@ btnAdd.onclick = () => {
     document.getElementById("save-btn").textContent = "Добавить вершину в граф"
 }
 
-/* удаление */
+//УДАЛЕНИЕ ВЕРШИНЫ
 deleteBtn.onclick = () => {
     if (!editingNode) return
     modal.style.display = "flex"
@@ -137,7 +174,7 @@ nameInput.addEventListener("input", () => {
     showNameDropdown(nameInput.value);
 });
 
-/* автозаполнение названия */
+//АВТОЗАПОЛНЕНИЕ
 function showNameDropdown(filter = "") {
     if (mode !== "edit") return;
     nameDropdown.innerHTML = "";
@@ -162,17 +199,26 @@ function showNameDropdown(filter = "") {
 function selectNode(node) {
     editingNode = node
     nameInput.value = node.name
-    categoryInput.value = node.category || ""
+    selectedCategories = node.category || [];
+    selectedCategoriesDiv.innerHTML = "";
+
+    selectedCategories.forEach(cat => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = cat + " ✕";
+
+        tag.onclick = () => {
+            selectedCategories = selectedCategories.filter(c => c !== cat);
+            tag.remove();
+        };
+
+        selectedCategoriesDiv.appendChild(tag);
+    });
     descInput.value = node.description || ""
-    preview.innerHTML = ""
-    if (node.images) {
-        node.images.forEach(url => {
-            const img = document.createElement("img")
-            img.src = url
-            img.style.margin = "5px"
-            preview.appendChild(img)
-        })
-    }
+    existingImages = node.images || [];
+    newImages = [];
+
+    renderPreview();
     selectedIcon = node.icon || "icons/parthenon.png";
     iconPicker.querySelectorAll("img").forEach(img => {
         img.classList.toggle("active", img.dataset.icon === selectedIcon)
@@ -237,9 +283,10 @@ function addCategory(cat) {
     categoryDropdown.style.display = "none";
 }
 
-/* связи */
+// DROPDOWN СВЯЗИ
 relationSearch.addEventListener("focus", showAllRelation);
 relationSearch.addEventListener("click", showAllRelation);
+relationSearch.addEventListener("input", showAllRelation);
 
 function showAllRelation() {
     const q = relationSearch.value.toLowerCase()
@@ -272,23 +319,75 @@ function addRelation(node) {
     relationDropdown.style.display = "none"
 }
 
-/*   - предпросмотр изображений   - */
+// ПРЕДПРОСМОТР КАРТИНОК
 imagesInput.addEventListener("change", () => {
-    preview.innerHTML = ""
-    const files = imagesInput.files
-    for (let file of files) {
-        const reader = new FileReader()
-        reader.onload = function (e) {
-            const img = document.createElement("img")
-            img.src = e.target.result
-            img.style.margin = "5px"
-            preview.appendChild(img)
-        }
-        reader.readAsDataURL(file)
-    }
-})
+    const files = Array.from(imagesInput.files);
+    newImages = [...files, ...newImages];
+    renderPreview();
+});
 
-/*    уведомление    */
+function renderPreview() {
+    preview.innerHTML = "";
+
+    const all = [
+        ...newImages.map(f => ({ type: "new", file: f })),
+        ...existingImages.map(url => ({ type: "old", url }))
+    ];
+
+    all.forEach(item => {
+
+        const wrapper = document.createElement("div");
+        wrapper.style.position = "relative";
+        wrapper.style.display = "inline-block";
+
+        const img = document.createElement("img");
+
+        if (item.type === "new") {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                img.src = e.target.result;
+            };
+
+            reader.readAsDataURL(item.file);
+        } else {
+            img.src = item.url;
+        }
+
+        const removeBtn = document.createElement("div");
+        removeBtn.textContent = "✕";
+        removeBtn.style.position = "absolute";
+        removeBtn.style.top = "2px";
+        removeBtn.style.right = "2px";
+        removeBtn.style.background = "rgba(0,0,0,0.6)";
+        removeBtn.style.color = "white";
+        removeBtn.style.fontSize = "12px";
+        removeBtn.style.width = "18px";
+        removeBtn.style.height = "18px";
+        removeBtn.style.display = "flex";
+        removeBtn.style.alignItems = "center";
+        removeBtn.style.justifyContent = "center";
+        removeBtn.style.borderRadius = "50%";
+        removeBtn.style.cursor = "pointer";
+
+        removeBtn.onclick = () => {
+
+            if (item.type === "new") {
+                newImages = newImages.filter(f => f !== item.file);
+            } else {
+                existingImages = existingImages.filter(u => u !== item.url);
+            }
+
+            renderPreview();
+        };
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(removeBtn);
+        preview.appendChild(wrapper);
+    });
+}
+
+//УВЕДОМЛЕНИЯ
 function showToast(text) {
     toast.textContent = text
     toast.classList.add("show")
@@ -297,16 +396,18 @@ function showToast(text) {
     }, 10000)
 }
 
-/* отправка формы */
+//ОТПРАВКА ФОРМЫ
 form.addEventListener("submit", async (e) => {
     e.preventDefault()
-    const images = await uploadImages()
+    const uploadedImages = await uploadImages();
+
+    const allImages = [...existingImages, ...uploadedImages];
     const nodeData = {
         id: editingNode?.id || Date.now().toString(),
         name: nameInput.value,
-        category: categoryInput.value.split(",").map(c => c.trim()).filter(Boolean),
+        category: selectedCategories,
         description: descInput.value,
-        images: images,
+        images: allImages,
         icon: selectedIcon
     };
     const body = {
@@ -334,49 +435,62 @@ form.addEventListener("submit", async (e) => {
     }
 })
 
-/*   очистка формы   */
+//ОЧИСТКА ФОРМЫ
 function clearForm() {
 
-    // сброс состояния
     editingNode = null
 
-    // текстовые поля
     nameInput.value = ""
     descInput.value = ""
     categorySearch.value = ""
     relationSearch.value = ""
 
-    // изображения
     imagesInput.value = ""
     preview.innerHTML = ""
+    existingImages = []
+    newImages = []
 
-    // категории
     selectedCategories = []
     selectedCategoriesDiv.innerHTML = ""
 
-    // связи
     selectedRelations = []
     selectedRelationsDiv.innerHTML = ""
 
-    // dropdown'ы
     nameDropdown.style.display = "none"
     categoryDropdown.style.display = "none"
     relationDropdown.style.display = "none"
 
-    // убираем фокус
     document.activeElement.blur()
 
-    // убираем иконки
     selectedIcon = "icons/parthenon.png";
     iconPicker.querySelectorAll("img").forEach(img => {
         img.classList.remove("active");
     })
 }
 
-/* обновление данных */
+//ОБНОВЛЕНИЕ ДАННЫХ
 async function reloadGraph() {
     const res = await fetch("http://localhost:5000/places")
     const data = await res.json()
     allNodes = data.nodes
     allEdges = data.edges
 }
+
+document.addEventListener("click", (e) => {
+
+    const isClickInside =
+        nameInput.contains(e.target) ||
+        nameDropdown.contains(e.target) ||
+
+        categorySearch.contains(e.target) ||
+        categoryDropdown.contains(e.target) ||
+
+        relationSearch.contains(e.target) ||
+        relationDropdown.contains(e.target);
+
+    if (!isClickInside) {
+        nameDropdown.style.display = "none";
+        categoryDropdown.style.display = "none";
+        relationDropdown.style.display = "none";
+    }
+});
