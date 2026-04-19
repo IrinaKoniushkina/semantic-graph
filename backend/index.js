@@ -1,7 +1,14 @@
+
 const express = require("express")
 const fs = require("fs")
 const path = require("path")
 const cors = require("cors")
+
+const UPLOAD_DIR = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR);
+}
 
 const app = express()
 const PORT = 5000
@@ -118,21 +125,44 @@ app.delete("/places/:id", (req, res) => {
   res.json({ success: true })
 })
 
-app.post("/upload-images", upload.array("images"), async (req, res) => {
-  const files = req.files
-  const urls = []
-  for (const file of files) {
-    const fileName = Date.now() + "-" + file.originalname
-    await minioClient.putObject(
-      "city-images",
-      fileName,
-      file.buffer
-    )
-    const url = `http://localhost:9000/city-images/${fileName}`
-    urls.push(url)
+app.post("/upload-images", upload.array("images"), (req, res) => {
+  try {
+    const files = req.files || [];
+
+    if (!files.length) {
+      return res.status(400).json({ error: "Нет файлов" });
+    }
+
+    const urls = [];
+
+    for (const file of files) {
+
+      if (!file.buffer) {
+        throw new Error("Файл повреждён (buffer пустой)");
+      }
+
+      // безопасное имя файла
+      const safeName = file.originalname
+        .replace(/[^a-zA-Z0-9.]/g, "_");
+
+      const fileName = Date.now() + "-" + safeName;
+      const filePath = path.join(UPLOAD_DIR, fileName);
+
+      fs.writeFileSync(filePath, file.buffer);
+
+      urls.push(`http://localhost:5000/uploads/${fileName}`);
+    }
+
+    res.json({ images: urls });
+
+  } catch (err) {
+    console.error("UPLOAD ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
-  res.json({ images: urls })
-})
+});
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.listen(PORT, () => {
   console.log("Server running on http://localhost:" + PORT)
 })

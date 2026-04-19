@@ -6,7 +6,9 @@
   <title>Редактор</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="css/editor.css">
 </head>
 
@@ -30,17 +32,52 @@
       <div class="conteiner">
         <div class="block1">
           <label>Название</label>
-          <input id="name-input">
+          <div class="input-wrapper">
+            <input id="name-input">
+            <div id="name-error" class="error-text">
+              <b>Такая вершина уже существует.</b>
+              <span id="edit-link"><b>Перейти к редактированию</b></span>
+            </div>
+            <div class="counter" id="name-counter">0/30</div>
+          </div>
+
           <div id="name-dropdown" class="dropdown"></div>
           <label>Выберите иконку</label>
 
           <div class="icon-picker" id="icon-picker">
-            <img src="icons/parthenon.png" data-icon="icons/parthenon.png">
-            <img src="icons/church.png" data-icon="icons/church.png">
-            <img src="icons/monument.png" data-icon="icons/monument.png">
-            <img src="icons/nature.png" data-icon="icons/nature.png">
-            <img src="icons/buildings.png" data-icon="icons/buildings.png">
-            <img src="icons/user.png" data-icon="icons/user.png">
+            <svg class="icon active" data-icon="museum" xmlns="http://www.w3.org/2000/svg" width="35" height="35"
+              viewBox="0 0 50 50">
+              <path
+                d="M9.27 19h3.916l.602 18H8.749zM6 38h38v2h3v3h2v2H1v-2h2v-3h3zm40-24.188L25.002 5L4 13.812V15h42zM8 16h34v2H8zm28.736 3h3.914l.607 18h-5.046zm-9.152 0h3.914l.6 18h-5.041zm-9.154 0h3.915l.596 18h-5.039z" />
+            </svg>
+            <svg class="icon" data-icon="church" xmlns="http://www.w3.org/2000/svg" width="35" height="35"
+              viewBox="0 0 24 24">
+              <path
+                d="M10 22v-4a2 2 0 0 1 4 0v4h4V12a1 1 0 0 0-.485-.857L13 8.434V6h2V4h-2V2h-2v2H9v2h2v2.434l-4.515 2.709A1 1 0 0 0 6 12v10h4zm-7 0h2v-8.118l-2.447 1.224A.998.998 0 0 0 2 16v5a1 1 0 0 0 1 1zm18.447-6.895L19 13.882V22h2a1 1 0 0 0 1-1v-5c0-.379-.214-.725-.553-.895z" />
+            </svg>
+            <svg class="icon" data-icon="monument" xmlns="http://www.w3.org/2000/svg" width="35" height="35"
+              viewBox="0 0 24 24">
+              <path
+                d="M12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+              <path
+                d="M16 5.236V17h1.75c.69 0 1.25.56 1.25 1.25V20h1a1 1 0 1 1 0 2H4a1 1 0 1 1 0-2h1v-1.75c0-.69.56-1.25 1.25-1.25H8V5.236L7.112 3.46a1.01 1.01 0 0 1 .778-1.454l3.955-.494a1.3 1.3 0 0 1 .31 0l3.955.494c.692.086 1.09.83.778 1.454z" />
+            </svg>
+            <svg class="icon" data-icon="park" xmlns="http://www.w3.org/2000/svg" width="35" height="35"
+              viewBox="0 0 12 12">
+              <path
+                d="M11 3.75A1.75 1.75 0 0 0 9.25 2a1.73 1.73 0 0 0-.8.2A1.24 1.24 0 0 0 7.21 1a1.19 1.19 0 0 0-.21.05A1.23 1.23 0 0 0 5.75 0a1.25 1.25 0 0 0-1.13.73A1.21 1.21 0 0 0 4 .52a1.23 1.23 0 0 0-1 .55A1.491 1.491 0 0 0 2.51 1a1.51 1.51 0 0 0-1.4 2.08A1.49 1.49 0 0 0 1.08 6a1.49 1.49 0 0 0 2.55.52h.12c.321 0 .63-.126.86-.35V10L3 11h5l-1.6-1V9a8.42 8.42 0 0 1 2.38-2c.26-.05.5-.167.7-.34A1.49 1.49 0 0 0 10 5.5a1.46 1.46 0 0 0 0-.17c.61-.29 1-.904 1-1.58zm-4.64 4.5V6h.18a1.52 1.52 0 0 0 .53-.1a1.5 1.5 0 0 0 .89 1a8.821 8.821 0 0 0-1.6 1.35z" />
+            </svg>
+            <svg class="icon" data-icon="building" xmlns="http://www.w3.org/2000/svg" width="35" height="35"
+              viewBox="0 0 24 24">
+              <path
+                d="M15 11V5.83c0-.53-.21-1.04-.59-1.41L12.7 2.71a.996.996 0 0 0-1.41 0l-1.7 1.7C9.21 4.79 9 5.3 9 5.83V7H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2zm-8 8H5v-2h2zm0-4H5v-2h2zm0-4H5V9h2zm6 8h-2v-2h2zm0-4h-2v-2h2zm0-4h-2V9h2zm0-4h-2V5h2zm6 12h-2v-2h2zm0-4h-2v-2h2z" />
+            </svg>
+            <svg class="icon" data-icon="user" xmlns="http://www.w3.org/2000/svg" width="40" height="40"
+              viewBox="0 0 24 22">
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4" />
+            </svg>
+
           </div>
 
           <label>Выберете слой</label>
@@ -53,29 +90,101 @@
           <input id="relation-search">
           <div id="relation-dropdown" class="dropdown"></div>
           <div id="selected-relations"></div>
-
-          <label>Добавьте изображения</label>
-          <div class="upload-grid">
-            <label for="images-input" class="upload-box">
-              <img src="icons/image.png" class="upload-icon">
-            </label>
-            <input type="file" id="images-input" multiple accept="image/*">
-            <div id="image-preview"></div>
+          <label>Ключевые слова</label>
+          <div class="input-wrapper">
+            <textarea id="keywords-input" placeholder="Введите ключевые слова"></textarea>
+            <div class="counter" id="keywords-counter">0/150</div>
           </div>
 
-      <div id="image-preview"></div>
+
         </div>
         <div class="block2">
+
           <label>Добавьте описание</label>
-          <textarea id="desc-input"></textarea>
-        </div>  
+          <div class="tabs editor-tabs">
+            <button type="button" class="tab active" data-tab="desc">Описание</button>
+            <button type="button" class="tab" data-tab="history">История</button>
+            <button type="button" class="tab" data-tab="modern">Наши дни</button>
+          </div>
+
+          <div class="tab-content">
+
+            <div class="tab-pane active input-wrapper" id="desc">
+              <div class="editor-wrapper">
+                <div class="editor-toolbar">
+                  <button type="button" data-cmd="bold"><b>B</b></button>
+                  <button type="button" data-cmd="italic"><i>I</i></button>
+                  <button type="button" data-cmd="underline"><u>U</u></button>
+                  <button type="button" data-cmd="insertUnorderedList">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <!-- точки -->
+                      <circle cx="4" cy="7" r="1.5"></circle>
+                      <circle cx="4" cy="14" r="1.5"></circle>
+                      <circle cx="4" cy="21" r="1.5"></circle>
+
+                      <!-- линии -->
+                      <line x1="9" y1="7" x2="21" y2="7" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                      </line>
+                      <line x1="9" y1="14" x2="21" y2="14" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round"></line>
+                      <line x1="9" y1="21" x2="21" y2="21" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <div id="desc-input" class="editor" contenteditable="true"></div>
+              </div>
+              <div class="counter" id="desc-counter">0/500</div>
+            </div>
+
+            <div class="tab-pane input-wrapper" id="history">
+              <div class="editor-wrapper">
+                <div class="editor-toolbar">
+                  <button type="button" data-cmd="bold"><b>B</b></button>
+                  <button type="button" data-cmd="italic"><i>I</i></button>
+                  <button type="button" data-cmd="underline"><u>U</u></button>
+                  <button type="button" data-cmd="insertUnorderedList">• список</button>
+                </div>
+
+                <div id="history-input" class="editor" contenteditable="true"></div>
+              </div>
+              <div class="counter" id="history-counter">0/1500</div>
+            </div>
+
+            <div class="tab-pane input-wrapper" id="modern">
+              <div class="editor-wrapper">
+                <div class="editor-toolbar">
+                  <button type="button" data-cmd="bold"><b>B</b></button>
+                  <button type="button" data-cmd="italic"><i>I</i></button>
+                  <button type="button" data-cmd="underline"><u>U</u></button>
+                  <button type="button" data-cmd="insertUnorderedList">• список</button>
+                </div>
+
+                <div id="modern-input" class="editor" contenteditable="true"></div>
+              </div>
+              <div class="counter" id="modern-counter">0/1500</div>
+            </div>
+          </div>
+          <label>Создайте таймлайн с изображениями (не более 5)</label>
+          <div class="upload-grid">
+            <div class="upload-box" id="uploadBox">
+              <img src="icons/image.png" class="upload-icon">
+            </div>
+
+            <input type="file" id="images-input" multiple accept="image/*" style="display:none;">
+            <div id="image-preview"></div>
+          </div>
+          <div id="labelsForImg"></div>
+        </div>
       </div>
       <div class="form-buttons">
         <button id="save-btn" class="submit">Добавить вершину в граф</button>
         <button id="delete-btn" class="delete-btn" type="button">Удалить</button>
       </div>
     </form>
-    
+
   </div>
 
   <div id="toast" class="toast">Сохранено</div>
@@ -88,6 +197,25 @@
         <button id="deleteYes" class="btn-yes">Да</button>
         <button id="deleteNo" class="btn-no">Нет</button>
       </div>
+    </div>
+  </div>
+  <div id="imageModal" class="image-modal">
+    <div class="image-modal-content">
+
+      <div class="modal-option" id="uploadFromDevice">
+        <img src="icons/image.png" class="modal-icon">
+        <div>Загрузить с устройства</div>
+      </div>
+
+      <div class="modal-divider">или</div>
+
+      <div class="modal-url">
+        <input id="imageUrlInput" placeholder="URL на изображение">
+        <button id="addUrlBtn">Добавить</button>
+      </div>
+
+      <div class="modal-close" id="closeImageModal">✕</div>
+
     </div>
   </div>
   <script src="editor.js"></script>

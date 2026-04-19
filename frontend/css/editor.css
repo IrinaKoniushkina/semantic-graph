@@ -8,7 +8,7 @@ body {
   justify-content: center;
 }
 
-#title{
+#title {
   font-size: 30px;
   font-family: 'Cormorant Infant';
   font-weight: 700;
@@ -17,9 +17,9 @@ body {
   width: 100%;
 }
 
-.conteiner{
+.conteiner {
   display: flex;
-  gap: 80px;
+  gap: 50px;
   justify-content: space-between;
 }
 
@@ -31,11 +31,11 @@ body {
   border-radius: 8px;
 }
 
-.block1{
-  width: 80%;
+.block1 {
+  width: 100%;
 }
 
-.block2{
+.block2 {
   width: 100%;
 }
 
@@ -62,20 +62,22 @@ body {
   margin-top: 30px;
 }
 
-.topPanel{
+.topPanel {
   display: flex;
   justify-content: space-between;
   gap: 100px;
 }
+
 .top-buttons {
   display: flex;
   gap: 20px;
 }
 
-#mode-add{
+#mode-add {
   display: none;
 }
-.mode-btn{
+
+.mode-btn {
   background: none;
   border: none;
 }
@@ -103,18 +105,18 @@ textarea {
 }
 
 textarea {
-  height: 88%;;
+  height: 240px;
   resize: none;
 }
 
-#images-input{
+#images-input {
   width: 80px;
   height: 80px;
   background: #ffffff;
 }
 
 button.submit {
-  background: #378511;
+  background: #379f04;
   border: none;
   padding: 10px 40px;
   font-size: 16px;
@@ -131,8 +133,13 @@ button.submit {
   padding: 5px 10px;
   border-radius: 5px;
   margin: 4px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toast {
@@ -232,9 +239,34 @@ button.submit {
   cursor: pointer;
 }
 
+.tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.tag-remove {
+  margin-left: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .tag span {
   margin-left: 5px;
   cursor: pointer;
+}
+
+.tag-tooltip {
+  position: absolute;
+  background: rgba(93, 71, 78, 0.85);
+  color: white;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 1000;
 }
 
 .dropdown {
@@ -264,7 +296,7 @@ button.submit {
   display: grid;
   grid-template-columns: repeat(6, 60px);
   gap: 10px;
-  margin-top: 5px;
+  margin-top: 15px;
   align-items: start;
 }
 
@@ -282,7 +314,7 @@ button.submit {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: rgba(255,255,255,0.7);
+  background: rgba(255, 255, 255, 0.7);
   transition: 0.2s;
   margin-top: 0px;
 }
@@ -303,29 +335,30 @@ button.submit {
   object-fit: cover;
   border-radius: 8px;
 }
+
 .icon-picker {
   display: flex;
   gap: 11px;
   margin-top: 10px;
 }
 
-.icon-picker img {
-  width: 35px;
-  height: 35px;
+.icon-picker svg {
+  width: 45px;
+  height: 45px;
   cursor: pointer;
   border: 2px solid transparent;
   border-radius: 6px;
   padding: 5px;
 }
 
-.icon-picker img.active {
+.icon-picker svg.active {
   border: 2px solid #5D474E;
   background: #eee;
 }
 
 .tooltip {
   position: fixed;
-  background: rgba(93,71,78,0.85);
+  background: rgba(93, 71, 78, 0.85);
   color: white;
   padding: 8px 10px;
   border-radius: 6px;
@@ -336,4 +369,199 @@ button.submit {
   opacity: 0;
   transition: opacity 0.2s ease;
   white-space: pre-line;
+}
+
+.editor-tabs {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.info-style-box {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.tab {
+  padding: 6px 20px;
+  border-radius: 500px;
+  border: 2px solid #ccc;
+  background: #f4f4f4;
+  cursor: pointer;
+  font-size: 15px;
+  font-family: 'Century Gothic';
+  transition: 0.2s;
+}
+
+.tab.active {
+  background: #ffffff;
+  border: 2px solid #5D474E;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper textarea {
+  padding-bottom: 30px;
+  /* чтобы текст не наезжал на счётчик */
+}
+
+.counter {
+  position: absolute;
+  bottom: 15px;
+  right: 10px;
+  background-color: #ffffff;
+  font-size: 14px;
+  color: #888;
+  pointer-events: none;
+}
+
+#name-counter.counter {
+  bottom: 12px;
+}
+
+input.error {
+  border: 2px solid #e74c3c;
+}
+
+.error-text {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 4px;
+  min-height: 14px;
+  display: none;
+}
+
+#edit-link {
+  color: #379f04;
+  cursor: pointer;
+  margin-left: 6px;
+  text-decoration: underline;
+}
+
+#edit-link:hover {
+  opacity: 0.8;
+}
+
+textarea#keywords-input {
+  width: 100%;
+  height: 80px;
+  resize: none;
+  padding-right: 5px;
+  box-sizing: border-box;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  border: 1px solid #d5c9a1;
+  border-radius: 6px;
+  background: #f4ecd2;
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: 1px solid #d5c9a1;
+}
+
+.editor-toolbar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.editor {
+  min-height: 120px;
+  padding: 10px;
+  outline: none;
+  background: white;
+}
+
+#labelsForImg {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 50%);
+}
+
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.image-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 300px;
+  position: relative;
+}
+
+.modal-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px dashed #ccc;
+  border-radius: 10px;
+}
+
+.modal-option:hover {
+  background: #f5f5f5;
+}
+
+.modal-icon {
+  width: 40px;
+  margin-bottom: 8px;
+}
+
+.modal-divider {
+  text-align: center;
+  margin: 10px 0;
+  color: #999;
+}
+
+.modal-url {
+  display: flex;
+  gap: 5px;
+}
+
+.modal-url input {
+  flex: 1;
+  padding: 5px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  cursor: pointer;
 }
