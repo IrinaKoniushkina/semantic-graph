@@ -1,14 +1,58 @@
+require("dotenv").config();
+
+const neo4j = require("neo4j-driver");
+
+const driver = neo4j.driver(
+  "bolt://127.0.0.1:7687",
+  neo4j.auth.basic("neo4j", "57281292")
+);
+
+async function testDB() {
+  const session = driver.session();
+  try {
+    const res = await session.run("RETURN 'Neo4j работает' AS msg");
+    console.log(res.records[0].get("msg"));
+  } finally {
+    await session.close();
+  }
+}
+
+const BUCKET = process.env.S3_BUCKET;
+const {S3Client, PutObjectCommand, ListObjectsV2Command} = require("@aws-sdk/client-s3");
+
+const s3 = new S3Client({
+  region: process.env.S3_REGION,
+  endpoint: process.env.S3_ENDPOINT,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY,
+    secretAccessKey: process.env.S3_SECRET_KEY
+  }
+});
+
+async function test() {
+  const res = await s3.send(new ListObjectsV2Command({
+    Bucket: "my-images-for-graph"
+  }));
+
+  console.log(res.Contents);
+}
+
+const { ListBucketsCommand } = require("@aws-sdk/client-s3");
+
+async function testS3() {
+  try {
+    const res = await s3.send(new ListBucketsCommand({}));
+    console.log("Buckets:", res.Buckets);
+  } catch (e) {
+    console.error("S3 TEST ERROR:", e);
+  }
+}
 
 const express = require("express")
 const fs = require("fs")
 const path = require("path")
 const cors = require("cors")
-
-const UPLOAD_DIR = path.join(__dirname, "uploads");
-
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR);
-}
 
 const app = express()
 const PORT = 5000
@@ -20,8 +64,6 @@ const USERS_FILE = path.join(__dirname, "users.json");
 
 app.use(cors())
 app.use(express.json())
-
-const DATA_FILE = path.join(__dirname, "../frontend/graph.json")
 
 // АВТОРИЗАЦИЯ
 function readUsers() {
@@ -43,125 +85,224 @@ app.post("/login", (req, res) => {
   res.json({ success: true });
 });
 
-
-
-// ЧТЕНИЕ ФАЙЛА
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return { nodes: [], edges: [] }
-  }
-  const raw = fs.readFileSync(DATA_FILE)
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return { nodes: [], edges: [] }
-  }
-}
-// ЗАПИСЬ В ГРАФ
-function writeData(data) {
-  fs.writeFileSync(
-    DATA_FILE,
-    JSON.stringify(data, null, 2),
-    "utf8"
-  )
-}
-
 // ПОЛУЧИТЬ ГРАФ
-app.get("/places", (req, res) => {
-  const data = readData()
-  res.json(data)
-})
+app.get("/places", async (req, res) => {
+  const session = driver.session();
 
-// ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
-app.post("/places", (req, res) => {
-  const { node, relatedIds, mode } = req.body
-  if (!node || !node.id || !node.name) {
-    return res.status(400).json({ error: "Некорректные данные" })
-  }
-  const data = readData()
-  if (!data.nodes) data.nodes = []
-  if (!data.edges) data.edges = []
-
-  // РЕДАКТИРОВАНИЕ
-  if (mode === "edit") {
-    const index = data.nodes.findIndex(n => n.id === node.id)
-    if (index === -1) {
-      return res.status(404).json({ error: "Вершина не найдена" })
-    }
-    data.nodes[index] = node
-    data.edges = data.edges.filter(e =>
-      e.source !== node.id && e.target !== node.id
-    )
-  }
-
-  //ДОБАВЛЕНИЕ
-  else {
-    data.nodes.push(node)
-  }
-  if (Array.isArray(relatedIds)) {
-
-    relatedIds.forEach(relId => {
-      data.edges.push({
-        id: "edge_" + Date.now() + "_" + Math.random(),
-        source: node.id,
-        target: relId,
-        type: "related"
-      })
-    })
-  }
-  writeData(data)
-  res.json({ success: true })
-})
-
-// УДАЛИТЬ ВЕРШИНУ
-app.delete("/places/:id", (req, res) => {
-  const id = req.params.id
-  const data = readData()
-  data.nodes = data.nodes.filter(n => n.id !== id)
-  data.edges = data.edges.filter(e =>
-    e.source !== id && e.target !== id
-  )
-  writeData(data)
-  res.json({ success: true })
-})
-
-app.post("/upload-images", upload.array("images"), (req, res) => {
   try {
-    const files = req.files || [];
+    const result = await session.run(`
+      MATCH (p:Place)
+      OPTIONAL MATCH (p)-[r:RELATED]->(other:Place)
+      RETURN p, r, other
+    `);
 
-    if (!files.length) {
-      return res.status(400).json({ error: "Нет файлов" });
-    }
+    const nodesMap = {};
+    const edges = [];
 
-    const urls = [];
+    result.records.forEach(record => {
+      const p = record.get("p").properties;
 
-    for (const file of files) {
-
-      if (!file.buffer) {
-        throw new Error("Файл повреждён (buffer пустой)");
+      let images = [];
+      try {
+        images = JSON.parse(p.images || "[]");
+      } catch (e) {
+        console.warn("Ошибка парсинга изображений:", p.images);
       }
 
-      // безопасное имя файла
-      const safeName = file.originalname
-        .replace(/[^a-zA-Z0-9.]/g, "_");
+      // НОДЫ
+      if (!nodesMap[p.id]) {
+        nodesMap[p.id] = {
+          id: p.id,
+          name: p.name,
+          keywords: p.keywords,
+          category: p.category || [],
+          icon: p.icon,
+          content: {
+            description: {
+              text: p.description,
+              images: images
+            },
+            history: p.history,
+            modern: p.modern
+          }
+        };
+      }
 
-      const fileName = Date.now() + "-" + safeName;
-      const filePath = path.join(UPLOAD_DIR, fileName);
+      // СВЯЗИ
+      const r = record.get("r");
+      const other = record.get("other");
 
-      fs.writeFileSync(filePath, file.buffer);
+      if (r && other) {
+        edges.push({
+          id: r.identity.toString(),
+          source: p.id,
+          target: other.properties.id,
+          type: "related"
+        });
+      }
+    });
 
-      urls.push(`http://localhost:5000/uploads/${fileName}`);
-    }
-
-    res.json({ images: urls });
+    res.json({
+      nodes: Object.values(nodesMap),
+      edges
+    });
 
   } catch (err) {
-    console.error("UPLOAD ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Ошибка получения данных" });
+  } finally {
+    await session.close();
   }
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
+app.post("/places", async (req, res) => {
+  const { node, relatedIds, mode } = req.body;
+
+  if (!node || !node.id || !node.name) {
+    return res.status(400).json({ error: "Некорректные данные" });
+  }
+
+  const session = driver.session();
+
+  try {
+    // 1. СОЗДАТЬ ИЛИ ОБНОВИТЬ НОДУ
+    await session.run(
+      `
+      MERGE (p:Place {id: $id})
+      SET p.name = $name,
+          p.keywords = $keywords,
+          p.category = $category,
+          p.icon = $icon,
+          p.description = $description,
+          p.history = $history,
+          p.modern = $modern,
+          p.images = $images
+      `,
+      {
+        id: node.id,
+        name: node.name,
+        keywords: node.keywords,
+        category: node.category || [],
+        icon: node.icon,
+        description: node.content?.description?.text || "",
+        history: node.content?.history || "",
+        modern: node.content?.modern || "",
+        images: JSON.stringify(node.content?.description?.images || [])
+      }
+    );
+
+    // 2. УДАЛИТЬ СТАРЫЕ СВЯЗИ (если редактирование)
+    if (mode === "edit") {
+      await session.run(
+        `
+        MATCH (p:Place {id: $id})-[r:RELATED]-()
+        DELETE r
+        `,
+        { id: node.id }
+      );
+    }
+
+    // 3. СОЗДАТЬ НОВЫЕ СВЯЗИ
+    if (Array.isArray(relatedIds) && relatedIds.length > 0) {
+      await session.run(
+        `
+        MATCH (p:Place {id: $id})
+        MATCH (other:Place)
+        WHERE other.id IN $relatedIds
+        MERGE (p)-[:RELATED]->(other)
+        `,
+        {
+          id: node.id,
+          relatedIds
+        }
+      );
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    await session.close();
+  }
+});
+
+// УДАЛИТЬ ВЕРШИНУ
+app.delete("/places/:id", async (req, res) => {
+  const id = String(req.params.id);
+  const session = driver.session();
+
+  try {
+    await session.run(
+      `
+      MATCH (p:Place {id: $id})
+      DETACH DELETE p
+      `,
+      { id }
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    await session.close();
+  }
+});
+
+//ЗАГРУЗКА ИЗОБРАЖЕНИЯ
+app.post("/upload-images", (req, res) => {
+  upload.array("images")(req, res, async (err) => {
+
+    if (err) {
+      console.error("MULTER ERROR:", err);
+      return res.status(500).json({ error: err.message });
+    }
+
+    try {
+      console.log("UPLOAD HIT");
+
+      const files = req.files || [];
+      console.log("FILES:", files);
+
+      if (!files.length) {
+        return res.status(400).json({ error: "Нет файлов" });
+      }
+
+      const urls = [];
+
+      for (const file of files) {
+        const safeName = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
+        const fileName = Date.now() + "-" + safeName;
+
+        const result = await s3.send(new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: fileName,
+          Body: file.buffer,
+          ContentType: file.mimetype
+        }));
+
+        console.log("UPLOAD OK:", fileName);
+
+        const url = `https://storage.yandexcloud.net/${BUCKET}/${fileName}`;
+        urls.push(url);
+      }
+
+      res.json({ images: urls });
+
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+
+  });
+});
+
+
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(PORT, () => {
   console.log("Server running on http://localhost:" + PORT)

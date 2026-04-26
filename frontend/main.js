@@ -129,6 +129,7 @@ function initGraph(data) {
 
     // Обработаем все комбинации двух и трёх категорий
     let colors = [];
+    
 
     const cats = new Set(d.category);
 

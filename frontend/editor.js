@@ -728,8 +728,8 @@ form.addEventListener("submit", async (e) => {
         showToast("Исправьте ошибки перед сохранением");
         return;
     }
-    
-   // console.log(nodeData);
+
+    // console.log(nodeData);
     if (!nameInput.value.trim()) {
         showToast("Введите название");
         return;
@@ -798,38 +798,60 @@ form.addEventListener("submit", async (e) => {
 //ОЧИСТКА ФОРМЫ
 function clearForm() {
 
-    editingNode = null
+    // режим
+    editingNode = null;
 
-    nameInput.value = ""
+    // текстовые поля
+    nameInput.value = "";
     keywordsInput.value = "";
-    keywordsCounter.textContent = "0 / 300";
     descInput.innerHTML = "";
     historyInput.innerHTML = "";
     modernInput.innerHTML = "";
-    existingImages = []
-    newImages = []
-    categorySearch.value = ""
-    relationSearch.value = ""
 
-    imagesInput.value = ""
-    preview.innerHTML = ""
+    // счётчики
+    keywordsCounter.textContent = "0 / 300";
 
-    selectedCategories = []
-    selectedCategoriesDiv.innerHTML = ""
+    // категории
+    selectedCategories = [];
+    selectedCategoriesDiv.innerHTML = "";
 
-    selectedRelations = []
-    selectedRelationsDiv.innerHTML = ""
+    // связи
+    selectedRelations = [];
+    selectedRelationsDiv.innerHTML = "";
 
-    nameDropdown.style.display = "none"
-    categoryDropdown.style.display = "none"
-    relationDropdown.style.display = "none"
+    // изображения
+    existingImages = [];
+    newImages = [];
 
-    document.activeElement.blur()
+    imagesInput.value = "";
+    preview.innerHTML = "";
+    labelsForImg.innerHTML = ""; 
 
+    // поле URL
+    imageUrlInput.value = "";
+
+    // скрыть модалку
+    imageModal.style.display = "none";
+
+    // dropdown'ы
+    nameDropdown.style.display = "none";
+    categoryDropdown.style.display = "none";
+    relationDropdown.style.display = "none";
+
+    categorySearch.value = "";
+    relationSearch.value = "";
+
+    // иконка
     selectedIcon = "";
     iconPicker.querySelectorAll("svg").forEach(svg => {
         svg.classList.remove("active");
-    })
+    });
+
+    // убрать фокус
+    document.activeElement.blur();
+
+    // обновить видимость кнопки загрузки
+    updateUploadVisibility();
 }
 
 //ОБНОВЛЕНИЕ ДАННЫХ
