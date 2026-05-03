@@ -7,18 +7,8 @@ const driver = neo4j.driver(
   neo4j.auth.basic("neo4j", "57281292")
 );
 
-async function testDB() {
-  const session = driver.session();
-  try {
-    const res = await session.run("RETURN 'Neo4j работает' AS msg");
-    console.log(res.records[0].get("msg"));
-  } finally {
-    await session.close();
-  }
-}
-
 const BUCKET = process.env.S3_BUCKET;
-const {S3Client, PutObjectCommand, ListObjectsV2Command} = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 const s3 = new S3Client({
   region: process.env.S3_REGION,
@@ -29,25 +19,6 @@ const s3 = new S3Client({
     secretAccessKey: process.env.S3_SECRET_KEY
   }
 });
-
-async function test() {
-  const res = await s3.send(new ListObjectsV2Command({
-    Bucket: "my-images-for-graph"
-  }));
-
-  console.log(res.Contents);
-}
-
-const { ListBucketsCommand } = require("@aws-sdk/client-s3");
-
-async function testS3() {
-  try {
-    const res = await s3.send(new ListBucketsCommand({}));
-    console.log("Buckets:", res.Buckets);
-  } catch (e) {
-    console.error("S3 TEST ERROR:", e);
-  }
-}
 
 const express = require("express")
 const fs = require("fs")
@@ -92,7 +63,7 @@ app.get("/places", async (req, res) => {
   try {
     const result = await session.run(`
       MATCH (p:Place)
-      OPTIONAL MATCH (p)-[r:RELATED]->(other:Place)
+      OPTIONAL MATCH (p)-[r:RELATED]-(other:Place)
       RETURN p, r, other
     `);
 
@@ -137,7 +108,7 @@ app.get("/places", async (req, res) => {
           id: r.identity.toString(),
           source: p.id,
           target: other.properties.id,
-          type: "related"
+          type: r.properties.type || "geo"
         });
       }
     });
@@ -157,7 +128,7 @@ app.get("/places", async (req, res) => {
 
 // ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
 app.post("/places", async (req, res) => {
-  const { node, relatedIds, mode } = req.body;
+  const { node, related, mode } = req.body;
 
   if (!node || !node.id || !node.name) {
     return res.status(400).json({ error: "Некорректные данные" });
@@ -166,7 +137,47 @@ app.post("/places", async (req, res) => {
   const session = driver.session();
 
   try {
-    // 1. СОЗДАТЬ ИЛИ ОБНОВИТЬ НОДУ
+
+    let oldImages = [];
+
+    // 1. Получаем старые картинки
+    if (mode === "edit") {
+      const oldRes = await session.run(
+        `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
+        { id: node.id }
+      );
+
+      if (oldRes.records.length) {
+        oldImages = JSON.parse(oldRes.records[0].get("images") || "[]");
+      }
+    }
+
+    const newImages = node.content?.description?.images || [];
+
+    // 2. Удаляем лишние картинки из S3
+    if (mode === "edit") {
+      const imagesToDelete = oldImages.filter(oldImg =>
+        !newImages.some(newImg => newImg.src === oldImg.src)
+      );
+
+      for (const img of imagesToDelete) {
+        if (!img.src) continue;
+
+        const key = img.src.split("/").pop();
+
+        try {
+          await s3.send(new DeleteObjectCommand({
+            Bucket: BUCKET,
+            Key: key
+          }));
+          console.log("Удалено при редактировании:", key);
+        } catch (e) {
+          console.warn("Ошибка удаления:", key, e.message);
+        }
+      }
+    }
+
+    // 3. Сохраняем ноду
     await session.run(
       `
       MERGE (p:Place {id: $id})
@@ -188,35 +199,46 @@ app.post("/places", async (req, res) => {
         description: node.content?.description?.text || "",
         history: node.content?.history || "",
         modern: node.content?.modern || "",
-        images: JSON.stringify(node.content?.description?.images || [])
+        images: JSON.stringify(newImages)
       }
     );
 
-    // 2. УДАЛИТЬ СТАРЫЕ СВЯЗИ (если редактирование)
-    if (mode === "edit") {
-      await session.run(
-        `
-        MATCH (p:Place {id: $id})-[r:RELATED]-()
-        DELETE r
-        `,
-        { id: node.id }
-      );
+    // 4. Обновляем связи
+    if (mode === "edit" && related !== null) {
+
+      if (related.length > 0) {
+        const newIds = related.map(r => r.id);
+
+        const newRels = related.map(r => ({
+          id: r.id,
+          type: r.type || "geo"
+        }));
+
+        await session.run(
+          `
+          MATCH (p:Place {id: $id})-[r:RELATED]-(other)
+          WHERE NOT any(rel IN $newRels WHERE rel.id = other.id AND rel.type = r.type)
+          DELETE r
+          `,
+          { id: node.id, newRels }
+        );
+      }
+
     }
 
-    // 3. СОЗДАТЬ НОВЫЕ СВЯЗИ
-    if (Array.isArray(relatedIds) && relatedIds.length > 0) {
-      await session.run(
-        `
-        MATCH (p:Place {id: $id})
-        MATCH (other:Place)
-        WHERE other.id IN $relatedIds
-        MERGE (p)-[:RELATED]->(other)
-        `,
-        {
-          id: node.id,
-          relatedIds
-        }
-      );
+    if (Array.isArray(related) && related.length > 0) {
+      for (const rel of related) {
+        await session.run(
+          `MATCH (p:Place {id: $id})
+           MATCH (other:Place {id: $targetId})
+           MERGE (p)-[r:RELATED {type: $type}]-(other)`,
+          {
+            id: node.id,
+            targetId: rel.id,
+            type: rel.type || "geo"
+          }
+        );
+      }
     }
 
     res.json({ success: true });
@@ -235,11 +257,39 @@ app.delete("/places/:id", async (req, res) => {
   const session = driver.session();
 
   try {
+    // 1. Получаем изображения
+    const result = await session.run(
+      `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
+      { id }
+    );
+
+    let images = [];
+
+    if (result.records.length) {
+      const raw = result.records[0].get("images");
+      images = JSON.parse(raw || "[]");
+    }
+
+    // 2. Удаляем файлы из S3
+    for (const img of images) {
+      if (!img?.src) continue;
+
+      const key = img.src.split("/").pop(); // имя файла
+
+      try {
+        await s3.send(new DeleteObjectCommand({
+          Bucket: BUCKET,
+          Key: key
+        }));
+        console.log("Удалено из S3:", key);
+      } catch (e) {
+        console.warn("Ошибка удаления файла:", key, e.message);
+      }
+    }
+
+    // 3. Удаляем ноду
     await session.run(
-      `
-      MATCH (p:Place {id: $id})
-      DETACH DELETE p
-      `,
+      `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
     );
 
@@ -263,22 +313,17 @@ app.post("/upload-images", (req, res) => {
     }
 
     try {
-      console.log("UPLOAD HIT");
-
       const files = req.files || [];
-      console.log("FILES:", files);
-
       if (!files.length) {
         return res.status(400).json({ error: "Нет файлов" });
       }
 
       const urls = [];
-
       for (const file of files) {
         const safeName = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
         const fileName = Date.now() + "-" + safeName;
 
-        const result = await s3.send(new PutObjectCommand({
+        await s3.send(new PutObjectCommand({
           Bucket: BUCKET,
           Key: fileName,
           Body: file.buffer,
@@ -300,9 +345,6 @@ app.post("/upload-images", (req, res) => {
 
   });
 });
-
-
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(PORT, () => {
   console.log("Server running on http://localhost:" + PORT)
