@@ -73,7 +73,7 @@ function initGraph(data) {
     .data(data.edges)
     .enter()
     .append("line")
-    .attr("stroke", "#a2a2a2");
+    .attr("stroke", d => d.type === "history" ? "#BC461B" : "#1C9284")
 
   // ВЕРШИНЫ
   const nodes = nodeGroup
@@ -116,10 +116,6 @@ function initGraph(data) {
     node.selectAll("path").attr("fill", fill);
   });
 
-  simulation.on("tick", () => {
-    nodes.attr("transform", d => `translate(${d.x}, ${d.y})`);
-  });
-
   function getNodeFill(d, svg) {
     if (!d.category || d.category.length === 0) return "#ccc";
 
@@ -129,7 +125,7 @@ function initGraph(data) {
 
     // Обработаем все комбинации двух и трёх категорий
     let colors = [];
-    
+
 
     const cats = new Set(d.category);
 
@@ -325,15 +321,6 @@ function initGraph(data) {
       selectedCategories.has("all") ||
       node.category.some(cat => selectedCategories.has(cat));
 
-    function isMatchedByKeyword(node, query) {
-      if (!query) return false;
-
-      const nameMatch = node.name.toLowerCase().includes(query);
-      const keywordMatch = (node.keywords || "").toLowerCase().includes(query);
-
-      return keywordMatch && !nameMatch;
-    }
-
     return matchCategory && matchText;
   }
   function isMatchedByKeyword(node, query) {
@@ -353,8 +340,6 @@ function initGraph(data) {
       highlightConnections(activeNode);
       return;
     }
-
-    nodes.style("opacity", d => isNodeActive(d, query) ? 1 : 0.1);
 
     labels.style("opacity", d => isNodeActive(d, query) ? 1 : 0.1);
 
@@ -558,22 +543,6 @@ function initGraph(data) {
     updateNodeTransform();
   });
 
-  // ГАЛЕРЕЯ
-  function renderGallery(images) {
-
-    if (!images || images.length === 0) {
-      return "<p>Нет изображений</p>";
-    }
-
-    return `
-      <div class="image-gallery">
-        ${images.map(src => `
-          <img src="${src}" class="gallery-img">
-        `).join("")}
-      </div>
-    `;
-  }
-
   // ОПИСАНИЕ
   function formatDescription(text) {
     if (!text) return "";
@@ -585,19 +554,25 @@ function initGraph(data) {
 
     const related = data.edges
       .filter(e => e.source.id === node.id || e.target.id === node.id)
-      .map(e => e.source.id === node.id ? e.target : e.source);
+      .map(e => ({
+        node: e.source.id === node.id ? e.target : e.source,
+        type: e.type
+      }));
 
     if (!related.length) return "<p>Нет связанных мест</p>";
 
     return `
-      <ul class="related-list">
-        ${related.map(r => `
-          <li class="related-item" data-id="${r.id}">
-            ${r.name}
-          </li>
-        `).join("")}
-      </ul>
-    `;
+    <ul class="related-list">
+      ${related.map(r => `
+        <li class="related-item" data-id="${r.node.id}">
+          ${r.node.name}
+          <span style="color:${r.type === "history" ? "#BC461B" : "#1C9284"}">
+            ●
+          </span>
+        </li>
+      `).join("")}
+    </ul>
+  `;
   }
 
   // ТАБЫ
@@ -613,13 +588,6 @@ function initGraph(data) {
         document.getElementById(id).classList.add("active");
       };
     });
-  }
-
-  function isConnected(a, b) {
-    return data.edges.some(l =>
-      (l.source.id === a.id && l.target.id === b.id) ||
-      (l.source.id === b.id && l.target.id === a.id)
-    );
   }
 
   // СМЕЩЕНИЕ ГРАФА

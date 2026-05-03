@@ -7,10 +7,9 @@ document.getElementById("logout-btn").onclick = () => {
     window.location.href = "login.html";
 };
 
-let mode = "add"
-
 let allNodes = []
 let allEdges = []
+let mode = "add";
 
 let selectedRelations = []
 let editingNode = null
@@ -30,7 +29,6 @@ const modernInput = document.getElementById("modern-input")
 const allCategories = ["культура", "молодежь", "туризм"];
 
 let selectedCategories = [];
-const categoryInput = document.getElementById("category-input")
 const descInput = document.getElementById("desc-input")
 
 let selectedIcon = "";
@@ -94,6 +92,11 @@ async function loadNodes() {
     allEdges = data.edges
 }
 loadNodes()
+
+function getSelectedRelationType() {
+    const selected = document.querySelector('input[name="type-relations"]:checked');
+    return selected?.value === "history-relation" ? "history" : "geo";
+}
 
 const limits = {
     name: { min: 3, max: 30 },
@@ -307,7 +310,7 @@ function selectNode(node) {
 
     keywordsInput.value = node.keywords || "";
     keywordsCounter.textContent =
-        `${keywordsInput.value.length} / 300`;
+        `${keywordsInput.value.length} / ${limits.keywords.max}`
 
     selectedCategories.forEach(cat => {
         const tag = document.createElement("span");
@@ -315,7 +318,10 @@ function selectNode(node) {
         tag.textContent = cat + " ✕";
 
         tag.onclick = () => {
-            selectedCategories = selectedCategories.filter(c => c !== cat);
+            selectedRelations =
+                selectedRelations.filter(r =>
+                    !(r.id === node.id && r.type === type)
+                );
             tag.remove();
         };
 
@@ -341,8 +347,12 @@ function selectNode(node) {
     relEdges.forEach(edge => {
         const relatedId =
             edge.source === node.id ? edge.target : edge.source
+
         const relatedNode = allNodes.find(n => n.id === relatedId)
-        if (relatedNode) addRelation(relatedNode)
+
+        if (relatedNode) {
+            addRelation(relatedNode, edge.type)
+        }
     })
     nameDropdown.style.display = "none"
 }
@@ -410,7 +420,7 @@ function showAllRelation() {
     relationDropdown.innerHTML = ""
     const results = allNodes.filter(n =>
         n.name.toLowerCase().includes(q) &&
-        !selectedRelations.includes(n.id)
+        !selectedRelations.some(r => r.id === n.id)
     )
     results.forEach(n => {
         const div = document.createElement("div")
@@ -421,9 +431,17 @@ function showAllRelation() {
     relationDropdown.style.display = "block"
 };
 
-function addRelation(node) {
-    selectedRelations.push(node.id)
+function addRelation(node, forcedType = null) {
+    const type = forcedType || getSelectedRelationType();
+    if (selectedRelations.some(r => r.id === node.id && r.type === type)) return;
+    selectedRelations.push({
+        id: node.id,
+        type: type
+    });
     const tag = document.createElement("span");
+    const color = type === "geo" ? "#1C9284" : "#BC461B";
+    tag.style.background = color;
+    tag.style.color = "#ccc";
     tag.className = "tag";
     tag.textContent = node.name + " ✕";
 
@@ -445,7 +463,7 @@ function addRelation(node) {
     // удаление
     tag.onclick = () => {
         selectedRelations =
-            selectedRelations.filter(id => id !== node.id);
+            selectedRelations.filter(r => r.id !== node.id);
         tag.remove();
     };
 
@@ -724,6 +742,7 @@ nameInput.addEventListener("input", checkDuplicateName);
 
 //ОТПРАВКА ФОРМЫ
 form.addEventListener("submit", async (e) => {
+    e.preventDefault()
     if (checkDuplicateName()) {
         showToast("Исправьте ошибки перед сохранением");
         return;
@@ -734,8 +753,6 @@ form.addEventListener("submit", async (e) => {
         showToast("Введите название");
         return;
     }
-
-    e.preventDefault()
 
     const totalImages = existingImages.length + newImages.length;
 
@@ -772,9 +789,10 @@ form.addEventListener("submit", async (e) => {
     };
     const body = {
         node: nodeData,
-        relatedIds: selectedRelations,
+        related: selectedRelations.length ? selectedRelations : null,
         mode: editingNode ? "edit" : "add"
     }
+    console.log("MODE:", editingNode ? "edit" : "add");
     const res = await fetch("http://localhost:5000/places", {
 
         method: "POST",
@@ -785,11 +803,10 @@ form.addEventListener("submit", async (e) => {
         body: JSON.stringify(body)
     })
     if (res.ok) {
-        showToast("Изменения сохранены")
-        await reloadGraph()
-        if (mode === "add") {
-            clearForm()
-        }
+        showToast(editingNode ? "Изменения сохранены" : "Вершина добавлена");
+        await reloadGraph();
+        clearForm();   // полностью сбрасываем ВСЁ
+        editingNode = null;
     } else {
         showToast("Ошибка сохранения")
     }
@@ -799,17 +816,15 @@ form.addEventListener("submit", async (e) => {
 function clearForm() {
 
     // режим
+    mode = "add";
     editingNode = null;
 
-    // текстовые поля
+    // текст
     nameInput.value = "";
     keywordsInput.value = "";
     descInput.innerHTML = "";
     historyInput.innerHTML = "";
     modernInput.innerHTML = "";
-
-    // счётчики
-    keywordsCounter.textContent = "0 / 300";
 
     // категории
     selectedCategories = [];
@@ -822,35 +837,32 @@ function clearForm() {
     // изображения
     existingImages = [];
     newImages = [];
-
     imagesInput.value = "";
     preview.innerHTML = "";
-    labelsForImg.innerHTML = ""; 
+    labelsForImg.innerHTML = "";
 
-    // поле URL
-    imageUrlInput.value = "";
-
-    // скрыть модалку
-    imageModal.style.display = "none";
-
-    // dropdown'ы
+    // UI
     nameDropdown.style.display = "none";
     categoryDropdown.style.display = "none";
     relationDropdown.style.display = "none";
 
     categorySearch.value = "";
     relationSearch.value = "";
+    imageUrlInput.value = "";
 
     // иконка
     selectedIcon = "";
-    iconPicker.querySelectorAll("svg").forEach(svg => {
-        svg.classList.remove("active");
-    });
+    iconPicker.querySelectorAll("svg")
+        .forEach(svg => svg.classList.remove("active"));
 
-    // убрать фокус
-    document.activeElement.blur();
+    // кнопки режима
+    btnAdd.style.display = "none";
+    btnEdit.style.display = "inline-block";
+    deleteBtn.style.display = "none";
 
-    // обновить видимость кнопки загрузки
+    title.textContent = "Добавить вершину";
+    document.getElementById("save-btn").textContent = "Добавить вершину в граф";
+
     updateUploadVisibility();
 }
 

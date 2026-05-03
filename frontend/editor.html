@@ -87,16 +87,22 @@
             <div class="selected-items" id="selected-categories"></div>
           </div>
           <label>Выберете связи</label>
+          <div class="choise-type-relations">
+            <input type="radio" id="geo-relation" name="type-relations" value="geo-relation" checked>
+            <label for="geo-relation" style="margin-right: 30px;">Географическая</label>
+
+            <input type="radio" id="history-relation" name="type-relations" value="history-relation" />
+            <label for="history-relation">Культурно-историческая</label>
+          </div>
           <input id="relation-search">
           <div id="relation-dropdown" class="dropdown"></div>
           <div id="selected-relations"></div>
+          
           <label>Ключевые слова</label>
           <div class="input-wrapper">
             <textarea id="keywords-input" placeholder="Введите ключевые слова"></textarea>
             <div class="counter" id="keywords-counter">0/150</div>
           </div>
-
-
         </div>
         <div class="block2">
 
