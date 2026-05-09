@@ -51,12 +51,16 @@
       overflow-y: auto;
       background: #ffffff;
       border-radius: 10px;
-      padding: 50px;
+      padding: 30px 50px;
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
       display: none;
       z-index: 100;
       opacity: 0;
       transition: opacity 0.3s ease;
+    }
+
+    #info label {
+      text-align: center;
     }
 
     #info h2 {
@@ -81,7 +85,7 @@
 
     .timeline {
       position: relative;
-      margin-top: 40px;
+      margin-top: 30px;
       display: flex;
       align-items: flex-start;
       gap: 10px;
@@ -124,10 +128,11 @@
       flex: 2;
     }
 
-    .timeline .timeline-item:hover .timeline-point{
+    .timeline .timeline-item:hover .timeline-point {
       display: none;
     }
-    .timeline .timeline-item:hover .timeline-year{
+
+    .timeline .timeline-item:hover .timeline-year {
       margin-top: 10px;
       font-weight: bold;
     }
@@ -237,6 +242,18 @@
       min-height: 0;
     }
 
+
+    #info .tab-pane * {
+      line-height: 1.5;
+      font-family: "Century Gothic" !important;
+      font-size: 16px !important;
+    }
+
+    #info .tab-pane p {
+      text-indent: 30px;
+      margin: 0;
+    }
+
     .categories span {
       display: inline-block;
       color: white;
@@ -283,17 +300,19 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      color: #5D474E;
     }
 
     .layer label {
-      margin-left: 7px;
-      font-size: 15px;
+      font-size: 16px;
+      font-weight: 700;
     }
 
     .top-bar {
       display: flex;
+      flex-direction: column;
       gap: 20px;
-      align-items: center;
+      width: 300px;
     }
 
     .search-wrapper {
@@ -301,7 +320,7 @@
     }
 
     #search {
-      width: 230px;
+      width: 262px;
       padding: 8px 28px 8px 10px;
       border-radius: 8px;
       border: 1px solid #5D474E;
@@ -324,7 +343,7 @@
     }
 
     #filter-toggle {
-      min-width: 268px;
+      width: 260px;
       padding: 8px 30px 8px 10px;
       /* справа место под стрелку */
       background: white;
@@ -374,15 +393,13 @@
     }
 
     .dropdown-menu {
-      position: absolute;
-      top: 110%;
-      left: 0;
+      margin-top: 10px;
       background: white;
       border-radius: 8px;
       border: 1px solid #5D474E;
       padding: 10px;
       display: none;
-      min-width: 286px;
+      min-width: 278px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
       z-index: 100;
     }
@@ -440,4 +457,44 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    .legend {
+      background-color: #ffffff;
+      padding: 20px 30px;
+      border: 1px solid #5D474E;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+    }
+
+    .el {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .el p {
+      margin: 10px 0px;
+    }
+
+    .node-map {
+      margin-top: 30px;
+      border-radius: 12px;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .node-map iframe {
+      width: 600px !important;
+      height: 250px !important;
+      border: none;
+    }
+
+    .node-map div {
+      margin-top: 10px;
+      border-radius: 8px;
     }

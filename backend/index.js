@@ -57,6 +57,7 @@ app.post("/login", (req, res) => {
 });
 
 // ПОЛУЧИТЬ ГРАФ
+// ПОЛУЧИТЬ ГРАФ
 app.get("/places", async (req, res) => {
   const session = driver.session();
 
@@ -68,20 +69,20 @@ app.get("/places", async (req, res) => {
     `);
 
     const nodesMap = {};
-    const edges = [];
+    const edgeMap = new Map(); // ← Новый способ обработки связей
 
     result.records.forEach(record => {
       const p = record.get("p").properties;
 
-      let images = [];
-      try {
-        images = JSON.parse(p.images || "[]");
-      } catch (e) {
-        console.warn("Ошибка парсинга изображений:", p.images);
-      }
-
-      // НОДЫ
+      // === НОДЫ ===
       if (!nodesMap[p.id]) {
+        let images = [];
+        try {
+          images = JSON.parse(p.images || "[]");
+        } catch (e) {
+          console.warn("Ошибка парсинга изображений:", p.images);
+        }
+
         nodesMap[p.id] = {
           id: p.id,
           name: p.name,
@@ -95,22 +96,42 @@ app.get("/places", async (req, res) => {
             },
             history: p.history,
             modern: p.modern
-          }
+          },
+          geo: p.geo || ""
         };
       }
 
-      // СВЯЗИ
+      // === СВЯЗИ ===
       const r = record.get("r");
       const other = record.get("other");
 
       if (r && other) {
-        edges.push({
-          id: r.identity.toString(),
-          source: p.id,
-          target: other.properties.id,
-          type: r.properties.type || "geo"
-        });
+        const id1 = p.id;
+        const id2 = other.properties.id;
+
+        // Создаём уникальный ключ для пары нод (независимо от порядка)
+        const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
+
+        const type = r.properties.type || "geo";
+
+        if (!edgeMap.has(key)) {
+          edgeMap.set(key, {
+            id: key,
+            source: id1 < id2 ? id1 : id2,
+            target: id1 < id2 ? id2 : id1,
+            types: new Set()
+          });
+        }
+
+        edgeMap.get(key).types.add(type);
       }
+    });
+
+    // Преобразуем Map в массив для отправки на фронтенд
+    const edges = [];
+    edgeMap.forEach(edge => {
+      edge.types = Array.from(edge.types);   // например: ["geo"] или ["geo", "history"]
+      edges.push(edge);
     });
 
     res.json({
@@ -130,54 +151,64 @@ app.get("/places", async (req, res) => {
 app.post("/places", async (req, res) => {
   const { node, related, mode } = req.body;
 
-  if (!node || !node.id || !node.name) {
-    return res.status(400).json({ error: "Некорректные данные" });
+  if (!node || !node.id || !node.name?.trim()) {
+    return res.status(400).json({ error: "Некорректные данные: id и name обязательны" });
+  }
+
+  const geo = node.geo || "";
+  if (geo && !geo.includes("yandex.ru/map-widget")) {
+    return res.status(400).json({ error: "Некорректная карта" });
   }
 
   const session = driver.session();
 
   try {
-
+    const isEdit = mode === "edit";
     let oldImages = [];
 
-    // 1. Получаем старые картинки
-    if (mode === "edit") {
+    // 1. Получаем старые изображения (только при редактировании)
+    if (isEdit) {
       const oldRes = await session.run(
         `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
         { id: node.id }
       );
 
       if (oldRes.records.length) {
-        oldImages = JSON.parse(oldRes.records[0].get("images") || "[]");
+        const imagesStr = oldRes.records[0].get("images");
+        oldImages = imagesStr ? JSON.parse(imagesStr) : [];
       }
     }
 
     const newImages = node.content?.description?.images || [];
 
-    // 2. Удаляем лишние картинки из S3
-    if (mode === "edit") {
+    // 2. Удаляем лишние изображения из S3
+    if (isEdit) {
       const imagesToDelete = oldImages.filter(oldImg =>
-        !newImages.some(newImg => newImg.src === oldImg.src)
+        !newImages.some(newImg => newImg?.src === oldImg?.src)
       );
 
       for (const img of imagesToDelete) {
-        if (!img.src) continue;
-
+        if (!img?.src) continue;
         const key = img.src.split("/").pop();
 
         try {
-          await s3.send(new DeleteObjectCommand({
-            Bucket: BUCKET,
-            Key: key
-          }));
-          console.log("Удалено при редактировании:", key);
+          await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+          console.log("Удалено из S3:", key);
         } catch (e) {
-          console.warn("Ошибка удаления:", key, e.message);
+          console.warn("Не удалось удалить файл:", key, e.message);
         }
       }
     }
 
-    // 3. Сохраняем ноду
+    // 3. Удаляем старые связи (перед обновлением ноды)
+    if (isEdit) {
+      await session.run(
+        `MATCH (p:Place {id: $id})-[r:RELATED]-() DELETE r`,
+        { id: node.id }
+      );
+    }
+
+    // 4. Создаём / обновляем ноду
     await session.run(
       `
       MERGE (p:Place {id: $id})
@@ -188,55 +219,39 @@ app.post("/places", async (req, res) => {
           p.description = $description,
           p.history = $history,
           p.modern = $modern,
-          p.images = $images
+          p.images = $images,
+          p.geo = $geo
       `,
       {
         id: node.id,
-        name: node.name,
-        keywords: node.keywords,
+        name: node.name.trim(),
+        keywords: node.keywords || "",
         category: node.category || [],
-        icon: node.icon,
+        icon: node.icon || "museum",
         description: node.content?.description?.text || "",
         history: node.content?.history || "",
         modern: node.content?.modern || "",
-        images: JSON.stringify(newImages)
+        images: JSON.stringify(newImages),
+        geo: geo
       }
     );
 
-    // 4. Обновляем связи
-    if (mode === "edit" && related !== null) {
+    // 5. Добавляем новые связи
+    if (Array.isArray(related) && related.length > 0) {
+      for (const rel of related) {
+        if (!rel?.id) continue;
 
-      if (related.length > 0) {
-        const newIds = related.map(r => r.id);
-
-        const newRels = related.map(r => ({
-          id: r.id,
-          type: r.type || "geo"
-        }));
+        const sourceId = node.id;
+        const targetId = rel.id;
+        const type = rel.type || "geo";
 
         await session.run(
           `
-          MATCH (p:Place {id: $id})-[r:RELATED]-(other)
-          WHERE NOT any(rel IN $newRels WHERE rel.id = other.id AND rel.type = r.type)
-          DELETE r
+          MATCH (a:Place {id: $sourceId})
+          MATCH (b:Place {id: $targetId})
+          MERGE (a)-[r:RELATED {type: $type}]-(b)
           `,
-          { id: node.id, newRels }
-        );
-      }
-
-    }
-
-    if (Array.isArray(related) && related.length > 0) {
-      for (const rel of related) {
-        await session.run(
-          `MATCH (p:Place {id: $id})
-           MATCH (other:Place {id: $targetId})
-           MERGE (p)-[r:RELATED {type: $type}]-(other)`,
-          {
-            id: node.id,
-            targetId: rel.id,
-            type: rel.type || "geo"
-          }
+          { sourceId, targetId, type }
         );
       }
     }
@@ -244,7 +259,7 @@ app.post("/places", async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
+    console.error("Ошибка при сохранении места:", err);
     res.status(500).json({ error: err.message });
   } finally {
     await session.close();

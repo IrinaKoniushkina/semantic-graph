@@ -47,6 +47,12 @@ const iconDescriptions = {
     "user": "Исторические личности, писатели и др."
 };
 
+const CATEGORY_COLORS = {
+    "молодежь": "#A32406",
+    "культура": "#521C00",
+    "туризм": "#496771"
+}
+
 const MAX_IMAGES = 5;
 let existingImages = [];
 let newImages = [];
@@ -79,6 +85,8 @@ const uploadFromDevice = document.getElementById("uploadFromDevice");
 const closeImageModal = document.getElementById("closeImageModal");
 const addUrlBtn = document.getElementById("addUrlBtn");
 const imageUrlInput = document.getElementById("imageUrlInput");
+const geoInput = document.getElementById("geo-input");
+
 
 const tagTooltip = document.createElement("div");
 tagTooltip.className = "tag-tooltip";
@@ -146,6 +154,28 @@ document.addEventListener("DOMContentLoaded", () => {
     bindCounter(historyInput, document.querySelector("#history-counter"), limits.history);
     bindCounter(modernInput, document.querySelector("#modern-counter"), limits.modern);
 });
+
+document.querySelectorAll('.editor').forEach(editor => {
+    editor.addEventListener('paste', function (e) {
+        e.preventDefault();
+
+        let text = (e.clipboardData || window.clipboardData).getData('text');
+
+        text = text
+            .replace(/\r/g, '')
+            .replace(/\n{2,}/g, '\n') // схлопнули лишние
+            .trim();
+
+        // превращаем строки в <p>
+        const paragraphs = text.split('\n')
+            .map(line => `<p>${line.trim()}</p>`)
+            .join('');
+
+        document.execCommand('insertHTML', false, paragraphs);
+    });
+});
+
+
 
 function validate() {
     if (nameInput.value.length < 3) {
@@ -271,34 +301,74 @@ deleteYes.onclick = async () => {
 }
 
 nameInput.addEventListener("focus", () => {
-    showNameDropdown("");
+    if (mode === "edit") {
+        showNameDropdown("");
+    }
 });
+
 nameInput.addEventListener("click", () => {
-    showNameDropdown("");
+    if (mode === "edit") {
+        showNameDropdown("");
+    }
 });
+
 nameInput.addEventListener("input", () => {
     showNameDropdown(nameInput.value);
 });
 
 //АВТОЗАПОЛНЕНИЕ
 function showNameDropdown(filter = "") {
-    if (mode !== "edit") return;
+
     nameDropdown.innerHTML = "";
+
+    // режим ADD → показываем ТОЛЬКО если есть ввод
+    if (mode === "add" && !filter.trim()) {
+        nameDropdown.style.display = "none";
+        return;
+    }
+
     const results = allNodes.filter(n =>
         n.name.toLowerCase().includes(filter.toLowerCase())
     );
+
+    // если нет совпадений → скрываем (в add)
+    if (mode === "add" && results.length === 0) {
+        nameDropdown.style.display = "none";
+        return;
+    }
+
     results.forEach(n => {
         const div = document.createElement("div");
         div.textContent = n.name;
-        div.onclick = () => selectNode(n);
+
+        div.onclick = () => {
+            // 🔥 КЛЮЧЕВОЕ ПОВЕДЕНИЕ
+            if (mode === "add") {
+                // переключаемся в режим редактирования
+                mode = "edit";
+
+                btnEdit.style.display = "none";
+                btnAdd.style.display = "inline-block";
+                deleteBtn.style.display = "inline-block";
+
+                title.textContent = "Редактировать вершину";
+                document.getElementById("save-btn").textContent = "Сохранить изменения";
+            }
+
+            selectNode(n);
+        };
+
         nameDropdown.appendChild(div);
     });
-    if (results.length === 0) {
+
+    // если edit и пусто → "Ничего не найдено"
+    if (mode === "edit" && results.length === 0) {
         const empty = document.createElement("div");
         empty.textContent = "Ничего не найдено";
         empty.style.color = "#999";
         nameDropdown.appendChild(empty);
     }
+
     nameDropdown.style.display = "block";
 }
 
@@ -315,6 +385,8 @@ function selectNode(node) {
     selectedCategories.forEach(cat => {
         const tag = document.createElement("span");
         tag.className = "tag";
+        tag.style.background = CATEGORY_COLORS[cat] || "#777";
+        tag.style.color = "white";
         tag.textContent = cat + " ✕";
 
         tag.onclick = () => {
@@ -330,6 +402,7 @@ function selectNode(node) {
     descInput.innerHTML = node.content?.description?.text || "";
     historyInput.innerHTML = node.content?.history || "";
     modernInput.innerHTML = node.content?.modern || "";
+    geoInput.value = node.geo || "";
 
     existingImages = node.content?.description?.images || []
     newImages = [];
@@ -345,13 +418,18 @@ function selectNode(node) {
         e.source === node.id || e.target === node.id
     )
     relEdges.forEach(edge => {
-        const relatedId =
-            edge.source === node.id ? edge.target : edge.source
+        const relatedId = edge.source === node.id ? edge.target : edge.source;
 
-        const relatedNode = allNodes.find(n => n.id === relatedId)
+        const relatedNode = allNodes.find(n => n.id === relatedId);
 
         if (relatedNode) {
-            addRelation(relatedNode, edge.type)
+            // Добавляем через функцию, чтобы всё было единообразно
+            addRelation(relatedNode, edge.types ? edge.types[0] : edge.type);
+
+            // Если есть второй тип — тоже добавляем
+            if (edge.types && edge.types.length > 1) {
+                addRelation(relatedNode, edge.types[1]);
+            }
         }
     })
     nameDropdown.style.display = "none"
@@ -416,60 +494,75 @@ relationSearch.addEventListener("click", showAllRelation);
 relationSearch.addEventListener("input", showAllRelation);
 
 function showAllRelation() {
-    const q = relationSearch.value.toLowerCase()
-    relationDropdown.innerHTML = ""
-    const results = allNodes.filter(n =>
-        n.name.toLowerCase().includes(q) &&
-        !selectedRelations.some(r => r.id === n.id)
-    )
-    results.forEach(n => {
-        const div = document.createElement("div")
-        div.textContent = n.name
-        div.onclick = () => addRelation(n)
-        relationDropdown.appendChild(div)
-    })
-    relationDropdown.style.display = "block"
-};
+    const q = relationSearch.value.toLowerCase();
+    relationDropdown.innerHTML = "";
 
+    const currentType = getSelectedRelationType();   // "geo" или "history"
+
+    const results = allNodes.filter(n => {
+        if (n.id === editingNode?.id) return false; // нельзя связать с собой
+
+        // Проверяем, есть ли уже связь именно с текущим выбранным типом
+        const alreadyHasThisType = selectedRelations.some(r =>
+            r.id === n.id && r.type === currentType
+        );
+
+        return !alreadyHasThisType &&
+            n.name.toLowerCase().includes(q);
+    });
+
+    results.forEach(n => {
+        const div = document.createElement("div");
+        div.textContent = n.name;
+        div.onclick = () => addRelation(n);
+        relationDropdown.appendChild(div);
+    });
+
+    relationDropdown.style.display = "block";
+}
+
+// ====================== ADD RELATION ======================
 function addRelation(node, forcedType = null) {
     const type = forcedType || getSelectedRelationType();
-    if (selectedRelations.some(r => r.id === node.id && r.type === type)) return;
+
+    // Запрет самопетли
+    if (node.id === editingNode?.id) {
+        showToast("Нельзя добавить связь объекта с самим собой");
+        return;
+    }
+
+    // Проверяем, есть ли уже такая связь с этим типом
+    const exists = selectedRelations.some(r => r.id === node.id && r.type === type);
+    if (exists) {
+        showToast(`Связь типа "${type}" уже добавлена`);
+        return;
+    }
+
+    // Добавляем
     selectedRelations.push({
         id: node.id,
         type: type
     });
+
+    // Визуальное отображение тега
     const tag = document.createElement("span");
     const color = type === "geo" ? "#1C9284" : "#BC461B";
     tag.style.background = color;
-    tag.style.color = "#ccc";
+    tag.style.color = "white";
     tag.className = "tag";
-    tag.textContent = node.name + " ✕";
+    tag.textContent = `${node.name} ✕`;
 
-    // tooltip
-    tag.onmouseenter = (e) => {
-        tagTooltip.textContent = node.name;
-        tagTooltip.style.opacity = "1";
-    };
-
-    tag.onmousemove = (e) => {
-        tagTooltip.style.left = e.pageX + 10 + "px";
-        tagTooltip.style.top = e.pageY + 10 + "px";
-    };
-
-    tag.onmouseleave = () => {
-        tagTooltip.style.opacity = "0";
-    };
-
-    // удаление
+    // Удаление тега
     tag.onclick = () => {
-        selectedRelations =
-            selectedRelations.filter(r => r.id !== node.id);
+        selectedRelations = selectedRelations.filter(r =>
+            !(r.id === node.id && r.type === type)
+        );
         tag.remove();
     };
 
     selectedRelationsDiv.appendChild(tag);
-    relationSearch.value = ""
-    relationDropdown.style.display = "none"
+    relationSearch.value = "";
+    relationDropdown.style.display = "none";
 }
 
 // ПРЕДПРОСМОТР КАРТИНОК
@@ -690,63 +783,11 @@ function showToast(text) {
     }, 10000)
 }
 
-const nameError = document.getElementById("name-error");
-const editLink = document.getElementById("edit-link");
-let duplicateNode = null;
 const nameCounter = document.getElementById("name-counter");
-
-function checkDuplicateName() {
-    const value = nameInput.value.trim().toLowerCase();
-
-    duplicateNode = allNodes.find(n =>
-        n.name.toLowerCase() === value &&
-        (!editingNode || n.id !== editingNode.id)
-    );
-
-    if (mode === "add" && duplicateNode) {
-        nameInput.classList.add("error");
-        nameError.style.display = "block";
-        nameCounter.style.bottom = "31px";
-        return true;
-    } else {
-        nameInput.classList.remove("error");
-        nameError.style.display = "none";
-        nameCounter.style.bottom = "12px";
-        duplicateNode = null;
-        return false;
-    }
-}
-
-editLink.onclick = () => {
-    if (!duplicateNode) return;
-
-    // переключаем режим
-    mode = "edit";
-    btnEdit.style.display = "none";
-    btnAdd.style.display = "inline-block";
-    deleteBtn.style.display = "inline-block";
-
-    title.textContent = "Редактировать вершину";
-    document.getElementById("save-btn").textContent = "Сохранить изменения";
-
-    // загружаем вершину
-    selectNode(duplicateNode);
-
-    // скрываем ошибку
-    nameError.style.display = "none";
-    nameInput.classList.remove("error");
-    nameCounter.style.removeProperty("bottom");
-};
-
-nameInput.addEventListener("input", checkDuplicateName);
 
 //ОТПРАВКА ФОРМЫ
 form.addEventListener("submit", async (e) => {
     e.preventDefault()
-    if (checkDuplicateName()) {
-        showToast("Исправьте ошибки перед сохранением");
-        return;
-    }
 
     // console.log(nodeData);
     if (!nameInput.value.trim()) {
@@ -785,7 +826,8 @@ form.addEventListener("submit", async (e) => {
             history: historyInput.innerHTML,
             modern: modernInput.innerHTML
         },
-        icon: selectedIcon
+        icon: selectedIcon,
+        geo: geoInput.value.trim()
     };
     const body = {
         node: nodeData,

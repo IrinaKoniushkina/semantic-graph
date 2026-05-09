@@ -34,10 +34,6 @@
           <label>Название</label>
           <div class="input-wrapper">
             <input id="name-input">
-            <div id="name-error" class="error-text">
-              <b>Такая вершина уже существует.</b>
-              <span id="edit-link"><b>Перейти к редактированию</b></span>
-            </div>
             <div class="counter" id="name-counter">0/30</div>
           </div>
 
@@ -173,6 +169,10 @@
               <div class="counter" id="modern-counter">0/1500</div>
             </div>
           </div>
+          <label>Добавьте код для Яндекс.Карт (см. инструкцию)</label>
+          <div class="input-wrapper">
+            <input id="geo-input" placeholder="Вставьте iframe-код Яндекс.Карт">
+          </div>
           <label>Создайте таймлайн с изображениями (не более 5)</label>
           <div class="upload-grid">
             <div class="upload-box" id="uploadBox">
@@ -215,10 +215,9 @@
 
       <div class="modal-divider">или</div>
 
-      <div class="modal-url">
-        <input id="imageUrlInput" placeholder="URL на изображение">
-        <button id="addUrlBtn">Добавить</button>
-      </div>
+      <input id="imageUrlInput" placeholder="URL на изображение">
+
+      <button id="addUrlBtn">Добавить</button>
 
       <div class="modal-close" id="closeImageModal">✕</div>
 

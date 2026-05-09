@@ -13,10 +13,6 @@ const nodeGroup = graphGroup.append("g");
 
 const infoPanel = d3.select("#info");
 
-const centerX = width / 2;
-const centerY = height / 2;
-const circleRadius = Math.min(width, height) * 0.35;
-
 const categoryBackgrounds = {
   all: "url('images/графBG.png')",
   культура: "url('images/cultureBG.png')",
@@ -45,10 +41,99 @@ const bg2 = document.getElementById("bg2");
 let activeBg = bg1;
 let hiddenBg = bg2;
 
+let simulation;
+
 // ЗАГРУЗКА
 fetch("http://localhost:5000/places")
   .then(res => res.json())
   .then(data => initGraph(data));
+
+function getBounds() {
+
+  const controlsEl = document.querySelector("#controls");
+  const infoEl = document.querySelector("#info");
+
+  const controls = controlsEl?.getBoundingClientRect();
+  const info = infoEl?.getBoundingClientRect();
+
+  return {
+    left: controls ? controls.right + 30 : 30,
+
+    right:
+      infoEl &&
+        getComputedStyle(infoEl).display !== "none"
+        ? (window.innerWidth - info.left + 30)
+        : 30,
+
+    top: 30,
+    bottom: 30
+  };
+}
+
+function getLayout() {
+
+  const b = getBounds();
+
+  const freeWidth =
+    window.innerWidth - b.left - b.right;
+
+  const freeHeight =
+    window.innerHeight - b.top - b.bottom;
+
+  return {
+    bounds: b,
+
+    centerX: b.left + freeWidth / 2,
+    centerY: b.top + freeHeight / 2,
+
+    radius:
+      Math.min(freeWidth, freeHeight) * 0.38
+  };
+}
+
+let currentLayout = getLayout();
+
+// === ПЛАВНОЕ СМЕЩЕНИЕ ГРАФА ===
+function updateSimulationLayout(smooth = true, delay = 0) {
+  const target = getLayout();
+
+  if (!smooth) {
+    currentLayout = { ...target };
+    simulation.force("center", d3.forceCenter(target.centerX, target.centerY));
+    simulation.force("radial", d3.forceRadial(target.radius, target.centerX, target.centerY).strength(0.018));
+    simulation.force("alignY", d3.forceY(target.centerY).strength(0.025));
+    simulation.alphaTarget(0.015).restart();
+    return;
+  }
+
+  setTimeout(() => {
+    d3.timer((elapsed) => {
+      const t = Math.min(1, elapsed / 1600);    
+      const k = 1 - Math.pow(1 - t, 5);          
+
+      currentLayout.centerX += (target.centerX - currentLayout.centerX) * k * 0.085;
+      currentLayout.centerY += (target.centerY - currentLayout.centerY) * k * 0.085;
+      currentLayout.radius += (target.radius - currentLayout.radius) * k * 0.085;
+
+      simulation.force("center",
+        d3.forceCenter(currentLayout.centerX, currentLayout.centerY)
+      );
+
+      simulation.force("radial",
+        d3.forceRadial(currentLayout.radius, currentLayout.centerX, currentLayout.centerY)
+          .strength(0.018)
+      );
+
+      simulation.force("alignY",
+        d3.forceY(currentLayout.centerY).strength(0.025)
+      );
+
+      simulation.alphaTarget(0.012).restart();
+
+      return t >= 1;
+    });
+  }, delay);
+}
 
 // ГРАФ
 function initGraph(data) {
@@ -57,23 +142,143 @@ function initGraph(data) {
     .attr("class", "graph-tooltip")
     .style("opacity", 0);
 
-  const simulation = d3.forceSimulation(data.nodes)
-    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(170))
+  function uiCollisionForce() {
+
+    return function () {
+
+      const uiRects = [];
+
+      const controls = document.querySelector("#controls")?.getBoundingClientRect();
+      const info = document.querySelector("#info");
+
+      if (controls) {
+        uiRects.push({
+          left: controls.left,
+          right: controls.right,
+          top: controls.top,
+          bottom: controls.bottom
+        });
+      }
+
+      if (info && info.style.display !== "none") {
+
+        const rect = info.getBoundingClientRect();
+
+        uiRects.push({
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom
+        });
+      }
+
+      data.nodes.forEach(d => {
+
+        const labelHeight = 40;
+        const nodeRadius = 25;
+
+        const x = d.x;
+        const y = d.y;
+
+        // учитываем подпись
+        const nodeLeft = x - nodeRadius;
+        const nodeRight = x + nodeRadius;
+        const nodeTop = y - nodeRadius - labelHeight;
+        const nodeBottom = y + nodeRadius;
+
+        uiRects.forEach(rect => {
+
+          const padding = 20;
+
+          const left = rect.left - padding;
+          const right = rect.right + padding;
+          const top = rect.top - padding;
+          const bottom = rect.bottom + padding;
+
+          const overlap =
+            nodeRight > left &&
+            nodeLeft < right &&
+            nodeBottom > top &&
+            nodeTop < bottom;
+
+          if (overlap) {
+
+            const pushX = Math.min(
+              Math.abs(nodeRight - left),
+              Math.abs(right - nodeLeft)
+            );
+
+            const pushY = Math.min(
+              Math.abs(nodeBottom - top),
+              Math.abs(bottom - nodeTop)
+            );
+
+            if (pushX < pushY) {
+
+              d.vx += x < (left + right) / 2
+                ? -0.15
+                : 0.15;
+
+            } else {
+
+              d.vy += y < (top + bottom) / 2
+                ? -0.15
+                : 0.15;
+            }
+          }
+        });
+      });
+    };
+  }
+
+  simulation = d3.forceSimulation(data.nodes)
+    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(150))
     .force("charge", d3.forceManyBody().strength(-200))
-    .force("collision", d3.forceCollide().radius(d => d.collisionRadius + 30).strength(0.7))
-    .force("radial", d3.forceRadial(circleRadius, centerX, centerY).strength(0.05))
-    .force("center", d3.forceCenter(centerX, centerY))
-    .force("alignY", d3.forceY(centerY).strength(0.03));
+    .force("collision", d3.forceCollide().radius(d => {
+      const textSize = (d.name?.length || 10) * 3.5;
+      return Math.max(35, textSize);
+    }).strength(0.9))
+    .force("ui", uiCollisionForce());
+
+  updateSimulationLayout();
 
   simulation.alphaTarget(0.1).restart();
 
+  // РЁБРА
   // РЁБРА
   const edges = linkGroup
     .selectAll("line")
     .data(data.edges)
     .enter()
     .append("line")
-    .attr("stroke", d => d.type === "history" ? "#BC461B" : "#1C9284")
+    .attr("stroke", d => {
+      if (d.types && d.types.length === 2) {
+        return "url(#edge-gradient)";        // градиент
+      }
+      return d.types?.includes("history") || d.type === "history"
+        ? "#BC461B"
+        : "#1C9284";
+    })
+    .attr("stroke-width", 1.5)
+    .attr("stroke-opacity", 0.85);
+  // Градиент для двойных связей
+  const defs = svg.append("defs");
+
+  defs.append("linearGradient")
+    .attr("id", "edge-gradient")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "0%")
+    .selectAll("stop")
+    .data([
+      { offset: "0%", color: "#1C9284" },
+      { offset: "100%", color: "#BC461B" }
+    ])
+    .enter()
+    .append("stop")
+    .attr("offset", d => d.offset)
+    .attr("stop-color", d => d.color);
 
   // ВЕРШИНЫ
   const nodes = nodeGroup
@@ -323,6 +528,7 @@ function initGraph(data) {
 
     return matchCategory && matchText;
   }
+
   function isMatchedByKeyword(node, query) {
     if (!query) return false;
 
@@ -362,9 +568,34 @@ function initGraph(data) {
       .attr("dy", "-2.5em");
   }
 
-
   // ТИК
   simulation.on("tick", () => {
+
+    const b = getBounds();
+
+    const left = b.left;
+    const right = window.innerWidth - b.right;
+
+    const top = b.top;
+    const bottom = window.innerHeight - b.bottom;
+
+    data.nodes.forEach(d => {
+
+      const textHalf = Math.max(
+        40,
+        (d.name?.length || 10) * 3
+      );
+
+      d.x = Math.max(
+        left + textHalf,
+        Math.min(right - textHalf, d.x)
+      );
+
+      d.y = Math.max(
+        top + 40,
+        Math.min(bottom - 20, d.y)
+      );
+    });
 
     edges
       .attr("x1", d => d.source.x)
@@ -407,7 +638,7 @@ function initGraph(data) {
         <div class="tab-content">
           <div class="tab-pane active" id="description">
             ${renderDescriptionTab(node)}
-          </div>
+            </div>
           <div class="tab-pane" id="history">
             ${formatDescription(node.content?.history)}
           </div>
@@ -419,8 +650,13 @@ function initGraph(data) {
           </div>
         </div>
       `);
-    setTimeout(() => infoPanel.style("opacity", 1), 10);
-    shiftGraph(true);
+    // Плавное появление панели + задержка движения графа
+    setTimeout(() => {
+      infoPanel.transition()
+        .duration(400)          
+        .style("opacity", 1);
+      updateSimulationLayout(true, 80);
+    }, 50);
     initTabs();
     document.querySelectorAll(".related-item").forEach(item => {
       item.onclick = (e) => {
@@ -449,12 +685,20 @@ function initGraph(data) {
     const desc = node.content?.description;
 
     if (!desc) return "<p>Нет данных</p>";
+    const mapHtml = node.geo
+      ?.replace('width="560"', 'width="600"')
+      ?.replace('height="400"', 'height="250"');
 
     return `
     ${formatDescription(desc.text)}
     ${renderTimeline(desc.images)}
+    ${node.geo
+        ? `<div class="node-map"><label><b>${node.name} на Яндекс.Картах</b></label>${node.geo}</div>`
+        : ""
+      }
   `;
   }
+
 
   function renderTimeline(images) {
     if (!images || images.length === 0) {
@@ -512,41 +756,56 @@ function initGraph(data) {
     });
   }
 
+function relaxGraph() {
+  updateSimulationLayout(true, 50);
+  simulation.alphaTarget(0.018).restart();
+}
+
   function updateNodeTransform() {
     nodes.attr("transform", d => {
-      const activeScale = (activeNode && d.id === activeNode.id) ? 2 : 1; // увеличение активной вершины
+      const isActive = activeNode && d.id === activeNode.id;
+      const scale = isActive ? 1.65 : 1; 
+
       return `
       translate(${d.x}, ${d.y})
-      scale(${activeScale})
+      scale(${scale})
       translate(-15, -15)
     `;
     });
+
     nodes.each(function (d) {
       d3.select(this).selectAll("path")
         .attr("fill", getNodeFill(d, svg));
     });
   }
 
-
   // КЛИК ПО ФОНУ
-  svg.on("click", () => {
-    infoPanel
-      .transition()
-      .duration(300)
-      .style("opacity", 0)
-      .on("end", () => infoPanel.style("display", "none"));
+svg.on("click", () => {
+  if (!activeNode) return;
 
-    shiftGraph(false);
+  // Плавное скрытие панели
+  infoPanel.transition()
+    .duration(350)
+    .style("opacity", 0)
+    .on("end", () => {
+      infoPanel.style("display", "none");
+    });
 
-    activeNode = null;
-    updateFilters();
-    updateNodeTransform();
-  });
+  activeNode = null;
+  updateNodeTransform();
+  updateFilters();
+
+  // Плавное "расползание" вершин после закрытия панели
+  setTimeout(() => {
+    updateSimulationLayout(true, 70);   // небольшая задержка
+    simulation.alphaTarget(0.05).restart(); // чуть сильнее, чтобы заметно разъехались
+  }, 180);
+});
 
   // ОПИСАНИЕ
   function formatDescription(text) {
     if (!text) return "";
-    return text;
+    return `<p class="info-text">${text}</p>`;
   }
 
   // СВЯЗАННЫЕ ВЕРШИНЫ
@@ -591,28 +850,16 @@ function initGraph(data) {
   }
 
   // СМЕЩЕНИЕ ГРАФА
-  let graphOffsetX = 0;
-
-  function shiftGraph(open) {
-
-    graphOffsetX = open ? -260 : 0;
-
-    graphGroup
-      .transition()
-      .duration(600)
-      .ease(d3.easeCubicOut)
-      .attr("transform", `translate(${graphOffsetX},0)`);
-  }
 
   // DRAG
   function dragStarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = Math.max(margin - graphOffsetX, Math.min(width - margin - graphOffsetX, d.x));
+    d.fx = Math.max(margin, Math.min(window.innerWidth - margin, d.x));
     d.fy = Math.max(margin, Math.min(height - margin, d.y));
   }
   function dragged(event, d) {
-    const left = margin - graphOffsetX;
-    const right = width - margin - graphOffsetX;
+    const left = margin;
+    const right = window.innerWidth - margin;
     d.fx = Math.max(left, Math.min(right, event.x));
     d.fy = Math.max(margin, Math.min(height - margin, event.y));
   }
@@ -622,6 +869,7 @@ function initGraph(data) {
     d.fy = null;
 
   }
+
   updateBackground();
   bg1.style.backgroundImage = categoryBackgrounds["all"];
   bg1.classList.add("active");
@@ -629,7 +877,10 @@ function initGraph(data) {
 
 // RESIZE
 window.addEventListener("resize", () => {
+
   svg
     .attr("width", window.innerWidth)
     .attr("height", window.innerHeight);
+
+  updateSimulationLayout();
 });
