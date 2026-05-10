@@ -2,10 +2,10 @@ if (localStorage.getItem("auth") !== "true") {
     window.location.href = "login.html";
 }
 
-document.getElementById("logout-btn").onclick = () => {
+document.getElementById("logout-btn").addEventListener("click", () => {
     localStorage.removeItem("auth");
     window.location.href = "login.html";
-};
+});
 
 let allNodes = []
 let allEdges = []
@@ -54,8 +54,14 @@ const CATEGORY_COLORS = {
 }
 
 const MAX_IMAGES = 5;
+const MIN_IMAGE_CAPTION = 3;
 let existingImages = [];
 let newImages = [];
+let currentEditingImage = null;
+let currentEditingIndex = -1;
+let currentEditingCollection = null;
+let tempImageData = null;
+let pendingFile = null;
 
 const imagesInput = document.getElementById("images-input")
 const preview = document.getElementById("image-preview")
@@ -65,46 +71,26 @@ const relationSearch = document.getElementById("relation-search")
 const relationDropdown = document.getElementById("relation-dropdown")
 const selectedRelationsDiv = document.getElementById("selected-relations")
 
+const relationReasonEditor = document.getElementById("relation-reason-editor");
+const relationReasonInput = document.getElementById("relation-reason-input");
+const relationReasonCounter = document.getElementById("relation-reason-counter");
+const saveRelationReasonBtn = document.getElementById("save-relation-reason");
+const cancelRelationReasonBtn = document.getElementById("cancel-relation-reason");
+
+let currentRelationEditing = null;
+let currentRelationTag = null;
+let isNewRelation = false;
+
 const form = document.getElementById("form")
 
 const btnAdd = document.getElementById("mode-add")
 const btnEdit = document.getElementById("mode-edit")
 const title = document.getElementById("title")
 
-const deleteBtn = document.getElementById("delete-btn")
+const step1Buttons = document.querySelector(".step-buttons-first");
 
-const modal = document.getElementById("deleteModal")
-const deleteYes = document.getElementById("deleteYes")
-const deleteNo = document.getElementById("deleteNo")
-const modalClose = document.getElementById("modalClose")
+const step1NextBtn = document.getElementById("step1-next");
 
-const toast = document.getElementById("toast")
-
-const imageModal = document.getElementById("imageModal");
-const uploadFromDevice = document.getElementById("uploadFromDevice");
-const closeImageModal = document.getElementById("closeImageModal");
-const addUrlBtn = document.getElementById("addUrlBtn");
-const imageUrlInput = document.getElementById("imageUrlInput");
-const geoInput = document.getElementById("geo-input");
-
-
-const tagTooltip = document.createElement("div");
-tagTooltip.className = "tag-tooltip";
-document.body.appendChild(tagTooltip);
-
-// ЗАГРУЗКА ДАННЫХ
-async function loadNodes() {
-    const res = await fetch("http://localhost:5000/places")
-    const data = await res.json()
-    allNodes = data.nodes
-    allEdges = data.edges
-}
-loadNodes()
-
-function getSelectedRelationType() {
-    const selected = document.querySelector('input[name="type-relations"]:checked');
-    return selected?.value === "history-relation" ? "history" : "geo";
-}
 
 const limits = {
     name: { min: 3, max: 30 },
@@ -114,6 +100,180 @@ const limits = {
     modern: { min: 1000, max: 1500 }
 };
 
+function validateStep1() {
+    let canShowButtons = false;
+    if (mode === "add") {
+        canShowButtons =
+            nameInput.value.trim().length > 0;
+    }
+    if (mode === "edit") {
+        canShowButtons =
+            editingNode !== null;
+    }
+    step1Buttons.style.display = canShowButtons ? "flex" : "none";
+    step1NextBtn.disabled = !isStep1Valid();
+    updateDisabledStyles();
+}
+
+nameInput.addEventListener("input", validateStep1);
+
+// при загрузке
+validateStep1();
+
+const deleteBtn = document.getElementById("delete-btn")
+
+const modal = document.getElementById("deleteModal")
+const deleteYes = document.getElementById("deleteYes")
+const deleteNo = document.getElementById("deleteNo")
+const modalClose = document.getElementById("modalClose")
+
+const deleteRelationModal = document.getElementById("deleteRelationModal");
+const relationDeleteYes = document.getElementById("relationDeleteYes");
+const relationDeleteNo = document.getElementById("relationDeleteNo");
+const relationModalClose = document.getElementById("relationModalClose");
+let pendingRelationDelete = null;
+
+const toast = document.getElementById("toast")
+
+const imageModal = document.getElementById("imageModal");
+const uploadFromDevice = document.getElementById("uploadFromDevice");
+const modalImageBox = document.getElementById("modalImageBox");
+const modalPreviewImage = document.getElementById("modalPreviewImage");
+const removeModalPreview = document.getElementById("removeModalPreview");
+
+const closeImageModal = document.getElementById("closeImageModal");
+const addUrlBtn = document.getElementById("addUrlBtn");
+const imageCaptionInput = document.getElementById("imageCaptionInput");
+const imageUrlInput = document.getElementById("imageUrlInput");
+const geoInput = document.getElementById("geo-input");
+
+
+const tagTooltip = document.createElement("div");
+tagTooltip.className = "tag-tooltip";
+document.body.appendChild(tagTooltip);
+
+const resetModal = document.getElementById("resetModal");
+const resetYes = document.getElementById("resetYes");
+const resetNo = document.getElementById("resetNo");
+const resetModalClose = document.getElementById("resetModalClose");
+
+// ЗАГРУЗКА ДАННЫХ
+async function fetchGraphData() {
+    try {
+        const response = await fetch("http://localhost:5000/places");
+
+        if (!response.ok) {
+            throw new Error("Ошибка загрузки графа");
+        }
+
+        const data = await response.json();
+
+        allNodes = data.nodes || [];
+        allEdges = data.edges || [];
+
+    } catch (error) {
+        console.error(error);
+        showToast("Ошибка загрузки данных");
+    }
+}
+
+fetchGraphData()
+
+function getSelectedRelationType() {
+    const selected = document.querySelector('input[name="type-relations"]:checked');
+    return selected?.value === "history-relation" ? "history" : "geo";
+}
+
+function isStep1Valid() {
+
+    return (
+        nameInput.value.trim().length >= limits.name.min &&
+        selectedCategories.length > 0 &&
+        selectedIcon
+    );
+}
+
+function isStep2Valid() {
+    const hasRelations = selectedRelations.length > 0;
+    const allImages = [...existingImages, ...newImages];
+    const hasImages = allImages.length > 0;
+
+    const allCaptionsValid = allImages.every(img =>
+        typeof img.caption === "string" &&
+        img.caption.trim().length >= MIN_IMAGE_CAPTION
+    );
+
+    return (
+        hasRelations &&
+        hasImages &&
+        allCaptionsValid
+    );
+}
+
+function isStep3Valid() {
+
+    return (
+        keywordsInput.value.trim().length >= limits.keywords.min &&
+        getTextLength(descInput) >= limits.desc.min &&
+        getTextLength(historyInput) >= limits.history.min &&
+        getTextLength(modernInput) >= limits.modern.min
+    );
+}
+
+function validateImageModal() {
+
+    const hasCaption =
+        imageCaptionInput.value.trim().length >= MIN_IMAGE_CAPTION;
+
+    addUrlBtn.disabled = !hasCaption;
+
+    addUrlBtn.classList.toggle(
+        "disabled-btn",
+        !hasCaption
+    );
+}
+
+imageCaptionInput.addEventListener(
+    "input",
+    validateImageModal
+);
+
+function updateWizardButtons() {
+    const step1Next = document.getElementById("step1-next");
+    const step2Next = document.getElementById("step2-next");
+    const saveBtn = document.getElementById("save-btn");
+    if (step1Next) { step1Next.disabled = !isStep1Valid(); }
+    if (step2Next) { step2Next.disabled = !isStep2Valid(); }
+    if (saveBtn) {
+        saveBtn.disabled = !(
+            isStep1Valid() &&
+            isStep2Valid() &&
+            isStep3Valid()
+        );
+    }
+}
+
+const resetButtons = document.querySelectorAll(".reset-step");
+
+resetButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        resetModal.style.display = "flex";
+    });
+});
+
+function updateDisabledStyles() {
+    document.querySelectorAll(
+        "#step1-next, #step2-next, #save-btn"
+    ).forEach(btn => {
+
+        if (btn.disabled) {
+            btn.classList.add("disabled-btn");
+        } else {
+            btn.classList.remove("disabled-btn");
+        }
+    });
+}
+
 function updateCounter(input, counter, max) {
     const length = getTextLength(input);
 
@@ -122,6 +282,14 @@ function updateCounter(input, counter, max) {
 }
 
 function getTextLength(input) {
+
+    if (
+        input.tagName === "INPUT" ||
+        input.tagName === "TEXTAREA"
+    ) {
+        return input.value.length;
+    }
+
     return input.innerText.length;
 }
 function bindCounter(input, counter, limit) {
@@ -154,6 +322,21 @@ document.addEventListener("DOMContentLoaded", () => {
     bindCounter(historyInput, document.querySelector("#history-counter"), limits.history);
     bindCounter(modernInput, document.querySelector("#modern-counter"), limits.modern);
 });
+[
+    nameInput,
+    geoInput,
+    keywordsInput,
+    relationReasonInput
+].forEach(el => {
+
+    el.addEventListener("input", updateWizardButtons);
+});
+
+[descInput, historyInput, modernInput]
+    .forEach(el => {
+
+        el.addEventListener("input", updateWizardButtons);
+    });
 
 document.querySelectorAll('.editor').forEach(editor => {
     editor.addEventListener('paste', function (e) {
@@ -174,34 +357,6 @@ document.querySelectorAll('.editor').forEach(editor => {
         document.execCommand('insertHTML', false, paragraphs);
     });
 });
-
-
-
-function validate() {
-    if (nameInput.value.length < 3) {
-        alert("Название слишком короткое");
-        return false;
-    }
-
-    if (getTextLength(descInput) < 250) {
-        alert("Слишком короткий текст");
-        return false;
-    }
-
-    if (getTextLength(historyInput) < 1000) {
-        alert("Слишком короткий текст");
-        return false;
-    }
-
-    if (getTextLength(modernInput) < 1000) {
-        alert("Слишком короткий текст");
-        return false;
-    }
-
-    return true;
-}
-
-
 
 // ЗАГРУЗКА ИЗОБРАЖЕНИЙ
 async function uploadImages() {
@@ -231,14 +386,15 @@ async function uploadImages() {
 }
 // ИКОНКИ
 iconPicker.querySelectorAll("svg").forEach(svg => {
-    svg.onclick = () => {
+    svg.addEventListener("click", () => {
         selectedIcon = svg.dataset.icon;
 
         iconPicker.querySelectorAll("svg")
             .forEach(i => i.classList.remove("active"));
 
         svg.classList.add("active");
-    };
+        updateWizardButtons();
+    });
     // ТУЛТИПЫ
     svg.onmouseenter = (e) => {
         const text = iconDescriptions[svg.dataset.icon] || "";
@@ -256,19 +412,19 @@ iconPicker.querySelectorAll("svg").forEach(svg => {
 });
 
 //РЕЖИМЫ
-btnEdit.onclick = () => {
+btnEdit.addEventListener("click", () => {
     clearForm()
     mode = "edit"
-    deleteBtn.style.display = "inline-block"
+    deleteBtn.style.display = "inline-flex"
     btnAdd.style.display = "inline-block"
     btnEdit.style.display = "none"
     btnEdit.classList.add("active")
     btnAdd.classList.remove("active")
     title.textContent = "Редактировать вершину"
-    document.getElementById("save-btn").textContent = "Сохранить изменения"
-}
+    document.getElementById("save-btn").textContent = "Сохранить"
+});
 
-btnAdd.onclick = () => {
+btnAdd.addEventListener("click", () => {
     clearForm()
     mode = "add"
     deleteBtn.style.display = "none"
@@ -278,13 +434,13 @@ btnAdd.onclick = () => {
     btnEdit.classList.remove("active")
     title.textContent = "Добавить вершину"
     document.getElementById("save-btn").textContent = "Добавить вершину в граф"
-}
+});
 
 //УДАЛЕНИЕ ВЕРШИНЫ
-deleteBtn.onclick = () => {
+deleteBtn.addEventListener("click", () => {
     if (!editingNode) return
     modal.style.display = "flex"
-}
+})
 
 deleteNo.onclick = () => modal.style.display = "none"
 modalClose.onclick = () => modal.style.display = "none"
@@ -297,7 +453,7 @@ deleteYes.onclick = async () => {
     showToast("Вершина удалена")
     clearForm()
     editingNode = null
-    await reloadGraph()
+    await fetchGraphData()
 }
 
 nameInput.addEventListener("focus", () => {
@@ -341,7 +497,7 @@ function showNameDropdown(filter = "") {
         const div = document.createElement("div");
         div.textContent = n.name;
 
-        div.onclick = () => {
+        div.addEventListener("click", () => {
             // 🔥 КЛЮЧЕВОЕ ПОВЕДЕНИЕ
             if (mode === "add") {
                 // переключаемся в режим редактирования
@@ -352,11 +508,11 @@ function showNameDropdown(filter = "") {
                 deleteBtn.style.display = "inline-block";
 
                 title.textContent = "Редактировать вершину";
-                document.getElementById("save-btn").textContent = "Сохранить изменения";
+                document.getElementById("save-btn").textContent = "Сохранить";
             }
 
             selectNode(n);
-        };
+        });
 
         nameDropdown.appendChild(div);
     });
@@ -389,13 +545,13 @@ function selectNode(node) {
         tag.style.color = "white";
         tag.textContent = cat + " ✕";
 
-        tag.onclick = () => {
+        tag.addEventListener("click", () => {
             selectedRelations =
                 selectedRelations.filter(r =>
                     !(r.id === node.id && r.type === type)
                 );
             tag.remove();
-        };
+        });
 
         selectedCategoriesDiv.appendChild(tag);
     });
@@ -404,7 +560,13 @@ function selectNode(node) {
     modernInput.innerHTML = node.content?.modern || "";
     geoInput.value = node.geo || "";
 
-    existingImages = node.content?.description?.images || []
+    existingImages = (node.content?.description?.images || []).map(img => ({
+        ...img,
+        caption: typeof img.caption === "string"
+            ? img.caption
+            : ""
+    }));
+
     newImages = [];
 
     renderPreview();
@@ -424,22 +586,24 @@ function selectNode(node) {
 
         if (relatedNode) {
             // Добавляем через функцию, чтобы всё было единообразно
-            addRelation(relatedNode, edge.types ? edge.types[0] : edge.type);
-
-            // Если есть второй тип — тоже добавляем
-            if (edge.types && edge.types.length > 1) {
-                addRelation(relatedNode, edge.types[1]);
+            if (edge.relations) {
+                edge.relations.forEach(rel => {
+                    addRelation(relatedNode, rel.type, rel.reason);
+                });
             }
         }
     })
-    nameDropdown.style.display = "none"
+    nameDropdown.style.display = "none";
+    validateStep1();
+    updateWizardButtons();
+    updateDisabledStyles();
 }
 
 document.querySelectorAll(".editor-toolbar button").forEach(btn => {
-    btn.onclick = () => {
+    btn.addEventListener("click", () => {
         const cmd = btn.dataset.cmd;
         document.execCommand(cmd, false, null);
-    };
+    });
 });
 
 categorySearch.addEventListener("input", () => {
@@ -476,13 +640,15 @@ function showAllCategories() {
 
 function addCategory(cat) {
     selectedCategories.push(cat);
+    updateWizardButtons();
     const tag = document.createElement("span");
     tag.className = "tag";
     tag.textContent = cat + " ✕";
-    tag.onclick = () => {
+    tag.addEventListener("click", () => {
         selectedCategories = selectedCategories.filter(c => c !== cat);
         tag.remove();
-    };
+        updateWizardButtons();
+    });
     selectedCategoriesDiv.appendChild(tag);
     categorySearch.value = "";
     categoryDropdown.style.display = "none";
@@ -522,48 +688,171 @@ function showAllRelation() {
 }
 
 // ====================== ADD RELATION ======================
-function addRelation(node, forcedType = null) {
+function addRelation(node, forcedType = null, forcedReason = "") {
     const type = forcedType || getSelectedRelationType();
-
     // Запрет самопетли
     if (node.id === editingNode?.id) {
         showToast("Нельзя добавить связь объекта с самим собой");
         return;
     }
-
-    // Проверяем, есть ли уже такая связь с этим типом
-    const exists = selectedRelations.some(r => r.id === node.id && r.type === type);
-    if (exists) {
-        showToast(`Связь типа "${type}" уже добавлена`);
+    const alreadyExists = selectedRelations.some(r =>
+        r.id === node.id &&
+        r.type === type
+    );
+    if (alreadyExists) {
         return;
     }
-
-    // Добавляем
-    selectedRelations.push({
+    const relation = {
         id: node.id,
-        type: type
-    });
-
-    // Визуальное отображение тега
-    const tag = document.createElement("span");
-    const color = type === "geo" ? "#1C9284" : "#BC461B";
-    tag.style.background = color;
-    tag.style.color = "white";
-    tag.className = "tag";
-    tag.textContent = `${node.name} ✕`;
-
-    // Удаление тега
-    tag.onclick = () => {
-        selectedRelations = selectedRelations.filter(r =>
-            !(r.id === node.id && r.type === type)
-        );
-        tag.remove();
+        type,
+        reason: forcedReason || ""
     };
 
+    selectedRelations.push(relation);
+
+    // Визуальное отображение тега
+    const tag = document.createElement("div");
+    const color = type === "geo" ? "#1C9284" : "#BC461B";
+    tag.className = "tag";
+    tag.style.background = color;
+    tag.style.color = "white";
+    const text = document.createElement("span");
+    text.className = "tag-text";
+    text.textContent = node.name;
+    const removeBtn = document.createElement("span");
+    removeBtn.className = "tag-remove";
+    removeBtn.innerHTML = "✕";
+    tag.appendChild(text);
+    tag.appendChild(removeBtn);
+    text.addEventListener("click", () => {
+        if (type === "history") {
+            openRelationReasonEditor(
+                relation,
+                tag,
+                false);
+        }
+    });
+    removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        askDeleteRelation(
+            relation,
+            tag);
+    };
     selectedRelationsDiv.appendChild(tag);
     relationSearch.value = "";
     relationDropdown.style.display = "none";
+    if (type === "history") {
+        openRelationReasonEditor(
+            relation,
+            tag,
+            true
+        );
+    }
+    updateWizardButtons();
 }
+
+function openRelationReasonEditor(relation, tag, newRelation = false) {
+
+    currentRelationEditing = relation;
+    currentRelationTag = tag;
+    isNewRelation = newRelation;
+
+    relationReasonEditor.classList.remove("hidden");
+
+    relationReasonInput.value =
+        relation.reason || "";
+
+    relationReasonCounter.textContent =
+        `${relationReasonInput.value.length}/150`;
+
+    document.querySelectorAll(".tag")
+        .forEach(t => t.classList.remove("editing"));
+
+    tag.classList.add("editing");
+}
+
+function closeRelationReasonEditor() {
+
+    relationReasonEditor.classList.add("hidden");
+
+    relationReasonInput.value = "";
+
+    currentRelationEditing = null;
+
+    if (currentRelationTag) {
+        currentRelationTag.classList.remove("editing");
+    }
+
+    currentRelationTag = null;
+    isNewRelation = false;
+}
+
+function askDeleteRelation(relation, tag) {
+    pendingRelationDelete = { relation, tag };
+    deleteRelationModal.style.display = "flex";
+}
+
+function removeRelation(relation, tag) {
+    selectedRelations = selectedRelations.filter(r => r !== relation);
+    if (tag) { tag.remove(); }
+    if (currentRelationEditing === relation) {
+        closeRelationReasonEditor();
+    }
+    updateWizardButtons();
+}
+
+relationDeleteNo.addEventListener("click", () => {
+    deleteRelationModal.style.display = "none";
+});
+
+relationModalClose.addEventListener("click", () => {
+    deleteRelationModal.style.display = "none";
+});
+
+relationDeleteYes.addEventListener("click", () => {
+    if (pendingRelationDelete) {
+        removeRelation(
+            pendingRelationDelete.relation,
+            pendingRelationDelete.tag);
+    }
+    pendingRelationDelete = null;
+    deleteRelationModal.style.display = "none";
+});
+
+relationReasonInput.addEventListener("input", () => {
+
+    relationReasonCounter.textContent =
+        `${relationReasonInput.value.length}/150`;
+});
+
+saveRelationReasonBtn.addEventListener("click", () => {
+
+    const text =
+        relationReasonInput.value.trim();
+
+    if (text.length < 3) {
+
+        showToast("Укажите причину взаимосвязи");
+
+        return;
+    }
+
+    currentRelationEditing.reason = text;
+
+    closeRelationReasonEditor();
+});
+
+cancelRelationReasonBtn.addEventListener("click", () => {
+    // если новая связь → удаляем её
+    if (isNewRelation && currentRelationEditing) {
+        selectedRelations =
+            selectedRelations.filter(r => r !== currentRelationEditing);
+        if (currentRelationTag) {
+            currentRelationTag.remove();
+        }
+    }
+    closeRelationReasonEditor();
+});
 
 // ПРЕДПРОСМОТР КАРТИНОК
 imagesInput.addEventListener("change", () => {
@@ -594,130 +883,197 @@ imagesInput.addEventListener("change", () => {
     renderPreview();
 });
 
-const labelsForImg = document.getElementById("labelsForImg");
+function createRemoveButton(handler) {
+    const button = document.createElement("div");
+
+    button.textContent = "✕";
+
+    Object.assign(button.style, {
+        position: "absolute",
+        top: "-5px",
+        right: "-5px",
+        background: "#ffffff",
+        color: "#5D474E",
+        fontWeight: "bold",
+        fontSize: "12px",
+        width: "18px",
+        height: "18px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "50%",
+        cursor: "pointer"
+    });
+
+    button.onclick = handler;
+
+    return button;
+}
+
 function renderPreview() {
     preview.innerHTML = "";
-    labelsForImg.innerHTML = "";
 
     const all = [
-        ...existingImages.map(obj => ({
-            type: "old",
-            ...obj
-        })),
-        ...newImages.map(item => ({
-            type: "new",
-            ...item
-        }))
+        ...existingImages,
+        ...newImages
     ];
 
-    all.forEach((item, index) => {
+    all.forEach((item) => {
 
         const wrapper = document.createElement("div");
-        wrapper.style.position = "relative";
-        wrapper.style.display = "inline-block";
+        wrapper.className = "preview-item";
+
+        const imageWrapper = document.createElement("div");
+        imageWrapper.style.position = "relative";
 
         const img = document.createElement("img");
-        img.style.width = "100%";
-        img.style.borderRadius = "6px";
+        img.style.width = "60px";
+        img.style.height = "60px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "8px";
 
         if (item.type === "new") {
             const reader = new FileReader();
-            reader.onload = e => img.src = e.target.result;
+
+            reader.onload = e => {
+                img.src = e.target.result;
+            };
+
             reader.readAsDataURL(item.file);
-        }
-        else if (item.type === "url") {
-            img.src = item.src;
-        }
-        else {
-            img.src = item.src;
-        }
-
-        // ПОДПИСЬ
-        const captionInput = document.createElement("input");
-        captionInput.placeholder = "Подпись";
-        captionInput.value = item.caption || "";
-        captionInput.style.width = "80%";
-        captionInput.style.fontSize = "14px";
-        captionInput.style.padding = "5px";
-
-        captionInput.oninput = () => {
-            if (item.type === "new") {
-                const target = newImages.find(f => f.file === item.file);
-                if (target) target.caption = captionInput.value;
+        } else {
+            if (item?.src) {
+                img.src = item.src;
             } else {
-                const target = existingImages.find(i => i.src === item.src);
-                if (target) target.caption = captionInput.value;
+                console.warn("Bad image item:", item);
+                return;
             }
-        };
+        }
 
-        // УДАЛЕНИЕ
-        const removeBtn = document.createElement("div");
-        removeBtn.textContent = "✕";
-        removeBtn.style.position = "absolute";
-        removeBtn.style.top = "-5px";
-        removeBtn.style.right = "-5px";
-        removeBtn.style.background = "#ffffff";
-        removeBtn.style.color = "#5D474E";
-        removeBtn.style.fontWeight = "bold";
-        removeBtn.style.fontSize = "12px";
-        removeBtn.style.width = "18px";
-        removeBtn.style.height = "18px";
-        removeBtn.style.display = "flex";
-        removeBtn.style.alignItems = "center";
-        removeBtn.style.justifyContent = "center";
-        removeBtn.style.borderRadius = "50%";
-        removeBtn.style.cursor = "pointer";
+        const caption = document.createElement("div");
+        caption.className = "preview-caption";
+        caption.textContent = item.caption || "";
 
+        const removeBtn = createRemoveButton((e) => {
+            e.stopPropagation();
 
-        removeBtn.onclick = () => {
             if (item.type === "new") {
-                newImages = newImages.filter(f => f.file !== item.file);
+                newImages =
+                    newImages.filter(f => f.file !== item.file);
             } else {
-                existingImages = existingImages.filter(i => i.src !== item.src);
+                existingImages =
+                    existingImages.filter(i => i.src !== item.src);
             }
+
             renderPreview();
-        };
+        });
 
-        // НОМЕР
-        const numberImg = document.createElement("div");
-        numberImg.textContent = index + 1;
-        numberImg.style.position = "absolute";
-        numberImg.style.bottom = "0px";
-        numberImg.style.right = "-5px";
-        numberImg.style.background = "#ffffff";
-        numberImg.style.color = "#5D474E";
-        numberImg.style.fontWeight = "bold";
-        numberImg.style.fontSize = "12px";
-        numberImg.style.width = "18px";
-        numberImg.style.height = "18px";
-        numberImg.style.display = "flex";
-        numberImg.style.alignItems = "center";
-        numberImg.style.justifyContent = "center";
-        numberImg.style.borderRadius = "50%";
+        wrapper.addEventListener("click", () => {
+            openImageEditor(item);
+        });
 
-        const labelWrapper = document.createElement("div");
-        labelWrapper.style.display = "flex";
-        labelWrapper.style.width = "100%";
-        labelWrapper.style.alignItems = "center";
-        labelWrapper.style.gap = "15px";
-        labelWrapper.style.marginBottom = "6px";
+        imageWrapper.appendChild(img);
+        imageWrapper.appendChild(removeBtn);
 
-        // номер слева
-        const labelNumber = document.createElement("div");
-        labelNumber.textContent = index + 1;
-        labelNumber.style.fontSize = "20px";
+        wrapper.appendChild(imageWrapper);
+        wrapper.appendChild(caption);
 
-        // добавляем
-        labelWrapper.appendChild(labelNumber);
-        labelWrapper.appendChild(captionInput);
-        labelsForImg.appendChild(labelWrapper);
-
-        wrapper.appendChild(img);
-        wrapper.appendChild(removeBtn);
-        wrapper.appendChild(numberImg);
         preview.appendChild(wrapper);
     });
+
     updateUploadVisibility();
+    updateWizardButtons();
+}
+
+function showModalPreview(src) {
+
+    modalPreviewImage.src = src;
+
+    modalImageBox.style.display = "block";
+
+    uploadFromDevice.style.display = "none";
+}
+
+function hideModalPreview() {
+
+    modalPreviewImage.src = "";
+
+    modalImageBox.style.display = "none";
+
+    uploadFromDevice.style.display = "flex";
+
+    pendingFile = null;
+
+    imageUrlInput.value = "";
+}
+
+function openImageEditor(item = null) {
+
+    currentEditingImage = item;
+    pendingFile = null;
+
+    imageModal.style.display = "flex";
+
+    const captionInput =
+        document.getElementById("imageCaptionInput");
+
+    if (item) {
+
+        // ИЩЕМ ГДЕ ЛЕЖИТ ОБЪЕКТ
+        currentEditingIndex =
+            existingImages.indexOf(item);
+
+        currentEditingCollection = existingImages;
+
+        if (currentEditingIndex === -1) {
+
+            currentEditingIndex =
+                newImages.indexOf(item);
+
+            currentEditingCollection = newImages;
+        }
+
+        tempImageData = structuredClone(item);
+
+        addUrlBtn.textContent = "Изменить";
+
+        captionInput.value = item.caption || "";
+
+        // FILE
+        if (item.file) {
+
+            const reader = new FileReader();
+
+            reader.onload = e => {
+                showModalPreview(e.target.result);
+            };
+
+            reader.readAsDataURL(item.file);
+        }
+
+        // URL
+        else {
+
+            showModalPreview(item.src);
+
+            imageUrlInput.value = item.src || "";
+        }
+
+    } else {
+
+        currentEditingIndex = -1;
+        currentEditingCollection = null;
+
+        tempImageData = null;
+
+        addUrlBtn.textContent = "Добавить";
+
+        captionInput.value = "";
+
+        imageUrlInput.value = "";
+
+        hideModalPreview();
+    }
+    validateImageModal();
 }
 
 function updateUploadVisibility() {
@@ -729,50 +1085,155 @@ function updateUploadVisibility() {
         uploadBox.style.display = "flex";
     }
 }
-uploadBox.onclick = () => {
-    imageModal.style.display = "flex";
-};
+uploadBox.addEventListener("click", () => {
+    openImageEditor();
+});
 
-uploadFromDevice.onclick = () => {
-    imageModal.style.display = "none";
-    imagesInput.click(); // вручную открываем выбор файла
-};
+uploadFromDevice.addEventListener("click", () => {
 
-addUrlBtn.onclick = () => {
+    const input = document.createElement("input");
+
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = () => {
+
+        const file = input.files[0];
+
+        if (!file) return;
+
+        pendingFile = file;
+
+        const reader = new FileReader();
+
+        reader.onload = e => {
+
+            showModalPreview(e.target.result);
+        };
+
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+});
+
+removeModalPreview.addEventListener("click", () => {
+    hideModalPreview();
+});
+
+addUrlBtn.addEventListener("click", () => {
+
+    const caption = document.getElementById("imageCaptionInput")
+        .value
+        .trim();
+
+    if (caption.length < MIN_IMAGE_CAPTION) {
+        showToast("Добавьте подпись к изображению");
+        return;
+    }
+
     const url = imageUrlInput.value.trim();
 
-    if (!url) return;
+    // ====================================
+    // РЕДАКТИРОВАНИЕ
+    // ====================================
 
-    const total = existingImages.length + newImages.length;
+    if (currentEditingImage) {
 
-    if (total >= MAX_IMAGES) return;
+        // ОБНОВЛЯЕМ ПОДПИСЬ ВСЕГДА
+        currentEditingImage.caption = caption;
 
-    // проверка что это картинка (очень желательно)
-    const img = new Image();
-    img.onload = () => {
+        // =========================
+        // НОВЫЙ FILE
+        // =========================
 
-        existingImages.push({
-            src: url,
-            caption: "",
-            type: "url"
-        });
+        if (pendingFile) {
 
-        imageUrlInput.value = "";
+            currentEditingImage.file = pendingFile;
+
+            delete currentEditingImage.src;
+
+            currentEditingImage.type = "new";
+        }
+
+        // =========================
+        // НОВЫЙ URL
+        // =========================
+
+        else if (url) {
+
+            currentEditingImage.src = url;
+
+            delete currentEditingImage.file;
+
+            currentEditingImage.type = "url";
+        }
+
         imageModal.style.display = "none";
 
         renderPreview();
-    };
 
-    img.onerror = () => {
-        showToast("Неверная ссылка на изображение");
-    };
+        return;
+    }
 
-    img.src = url;
-};
+    // ====================================
+    // СОЗДАНИЕ FILE
+    // ====================================
 
-closeImageModal.onclick = () => {
+    if (pendingFile) {
+
+        newImages.push({
+            file: pendingFile,
+            caption,
+            type: "new"
+        });
+
+        imageModal.style.display = "none";
+
+        renderPreview();
+
+        return;
+    }
+
+    if (!url) {
+
+        showToast("Добавьте изображение");
+
+        return;
+    }
+
+    existingImages.push({
+        src: url,
+        caption,
+        type: "url"
+    });
+
     imageModal.style.display = "none";
-};
+
+    renderPreview();
+});
+
+closeImageModal.addEventListener("click", () => {
+
+    const confirmClose =
+        confirm("Сбросить изменения?");
+
+    if (!confirmClose) return;
+
+    imageModal.style.display = "none";
+
+    pendingFile = null;
+
+    if (tempImageData && currentEditingImage) {
+
+        Object.keys(currentEditingImage)
+            .forEach(key => delete currentEditingImage[key]);
+
+        Object.assign(currentEditingImage, tempImageData);
+    }
+
+    hideModalPreview();
+});
 
 //УВЕДОМЛЕНИЯ
 function showToast(text) {
@@ -806,13 +1267,24 @@ form.addEventListener("submit", async (e) => {
 
     const newImageObjects = uploaded.map((src, i) => ({
         src,
-        caption: newImages[i]?.caption || ""
+        caption: newImages[i]?.caption ?? ""
     }));
 
-    const allImages = [
-        ...existingImages,
-        ...newImageObjects
-    ];
+    const normalizedExisting = existingImages.map(i => ({
+        src: i.src,
+        caption: i.caption ?? ""
+    }));
+
+    const allImages = [...normalizedExisting, ...newImageObjects];
+
+    const invalidHistoryRelation =
+        selectedRelations.find(r => r.type === "history" &&
+            (!r.reason || r.reason.trim().length < 3));
+    if (invalidHistoryRelation) {
+        showToast("Для культурно-исторических связей нужно указать причину");
+        return;
+    }
+
     const nodeData = {
         id: editingNode?.id || Date.now().toString(),
         name: nameInput.value.trim(),
@@ -846,7 +1318,7 @@ form.addEventListener("submit", async (e) => {
     })
     if (res.ok) {
         showToast(editingNode ? "Изменения сохранены" : "Вершина добавлена");
-        await reloadGraph();
+        await fetchGraphData();
         clearForm();   // полностью сбрасываем ВСЁ
         editingNode = null;
     } else {
@@ -854,36 +1326,50 @@ form.addEventListener("submit", async (e) => {
     }
 })
 
-//ОЧИСТКА ФОРМЫ
-function clearForm() {
-
-    // режим
-    mode = "add";
-    editingNode = null;
-
-    // текст
+function clearTextFields() {
     nameInput.value = "";
     keywordsInput.value = "";
     descInput.innerHTML = "";
     historyInput.innerHTML = "";
     modernInput.innerHTML = "";
+    geoInput.value = "";
+}
 
-    // категории
-    selectedCategories = [];
-    selectedCategoriesDiv.innerHTML = "";
-
-    // связи
+function clearRelations() {
     selectedRelations = [];
     selectedRelationsDiv.innerHTML = "";
+}
 
-    // изображения
+function clearCategories() {
+    selectedCategories = [];
+    selectedCategoriesDiv.innerHTML = "";
+}
+
+function clearImages() {
     existingImages = [];
     newImages = [];
+
     imagesInput.value = "";
     preview.innerHTML = "";
-    labelsForImg.innerHTML = "";
+}
 
-    // UI
+//ОЧИСТКА ФОРМЫ
+function clearForm() {
+
+    mode = "add";
+    editingNode = null;
+
+    clearTextFields();
+    clearRelations();
+    clearCategories();
+    clearImages();
+
+    selectedIcon = "";
+
+    iconPicker
+        .querySelectorAll("svg")
+        .forEach(svg => svg.classList.remove("active"));
+
     nameDropdown.style.display = "none";
     categoryDropdown.style.display = "none";
     relationDropdown.style.display = "none";
@@ -892,34 +1378,41 @@ function clearForm() {
     relationSearch.value = "";
     imageUrlInput.value = "";
 
-    // иконка
-    selectedIcon = "";
-    iconPicker.querySelectorAll("svg")
-        .forEach(svg => svg.classList.remove("active"));
-
-    // кнопки режима
     btnAdd.style.display = "none";
     btnEdit.style.display = "inline-block";
     deleteBtn.style.display = "none";
 
     title.textContent = "Добавить вершину";
-    document.getElementById("save-btn").textContent = "Добавить вершину в граф";
 
+    document.getElementById("save-btn").textContent =
+        "Добавить вершину";
+
+    currentStep = 1;
+    updateStepsUI();
+    validateStep1();
     updateUploadVisibility();
+    updateWizardButtons();
+    updateDisabledStyles();
 }
 
-//ОБНОВЛЕНИЕ ДАННЫХ
-async function reloadGraph() {
-    const res = await fetch("http://localhost:5000/places")
-    const data = await res.json()
-    if (!res.ok) {
-        const text = await res.text();
-        console.error(text);
-        throw new Error("Upload failed");
-    }
-    allNodes = data.nodes
-    allEdges = data.edges
-}
+// ======================
+// RESET FORM
+resetNo.addEventListener("click", () => {
+    resetModal.style.display = "none";
+});
+
+resetModalClose.addEventListener("click", () => {
+    resetModal.style.display = "none";
+});
+
+resetYes.addEventListener("click", () => {
+
+    resetModal.style.display = "none";
+
+    clearForm();
+
+    showToast("Изменения сброшены");
+});
 
 document.addEventListener("click", (e) => {
 
@@ -941,14 +1434,81 @@ document.addEventListener("click", (e) => {
 });
 
 document.querySelectorAll(".editor-tabs .tab").forEach(tab => {
-    tab.onclick = () => {
 
-        const wrapper = tab.closest(".block2");
-
-        wrapper.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-        wrapper.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-
+    tab.addEventListener("click", () => {
+        const tabsContainer = tab.closest(".editor-tabs");
+        const contentContainer = document.querySelector(".tab-content");
+        tabsContainer.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        contentContainer.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
         tab.classList.add("active");
-        wrapper.querySelector("#" + tab.dataset.tab).classList.add("active");
-    };
+        document.getElementById(tab.dataset.tab).classList.add("active");
+    });
 });
+
+// =========================
+// WIZARD STEPS
+// =========================
+
+let currentStep = 1;
+
+const stepBlocks =
+    document.querySelectorAll(".form-step");
+
+const stepIndicators =
+    document.querySelectorAll(".step");
+
+function updateStepsUI() {
+
+    stepBlocks.forEach(block => {
+
+        block.classList.toggle(
+            "active",
+            Number(block.dataset.step) === currentStep
+        );
+    });
+
+    stepIndicators.forEach(step => {
+
+        const stepNum =
+            Number(step.dataset.step);
+
+        step.classList.remove(
+            "active",
+            "completed"
+        );
+
+        if (stepNum === currentStep) {
+            step.classList.add("active");
+        }
+
+        if (stepNum < currentStep) {
+            step.classList.add("completed");
+        }
+    });
+}
+
+document.querySelectorAll(".next-step")
+    .forEach(btn => {
+
+        btn.addEventListener("click", () => {
+
+            if (currentStep < 3) {
+                currentStep++;
+                updateStepsUI();
+            }
+        });
+    });
+
+document.querySelectorAll(".prev-step")
+    .forEach(btn => {
+
+        btn.addEventListener("click", () => {
+
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepsUI();
+            }
+        });
+    });
+
+updateStepsUI();

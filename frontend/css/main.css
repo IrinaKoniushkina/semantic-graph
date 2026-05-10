@@ -209,7 +209,7 @@
       border: 2px solid #ccc;
       background: #f4f4f4;
       cursor: pointer;
-      font-size: 15px;
+      font-size: 16px;
       font-family: 'Century Gothic';
     }
 
@@ -244,7 +244,7 @@
 
 
     #info .tab-pane * {
-      line-height: 1.5;
+      line-height: 1.4;
       font-family: "Century Gothic" !important;
       font-size: 16px !important;
     }
@@ -257,10 +257,10 @@
     .categories span {
       display: inline-block;
       color: white;
-      padding: 3px 14px 5px;
+      padding: 5px 20px;
       border-radius: 15px;
       margin-right: 5px;
-      font-size: 15px;
+      font-size: 16px;
     }
 
     .related-list li {
@@ -497,4 +497,204 @@
     .node-map div {
       margin-top: 10px;
       border-radius: 8px;
+    }
+
+    .related-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .related-group {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .related-group-header {
+      padding: 14px 18px;
+      background: #f7f7f7;
+      font-weight: 700;
+      border-bottom: 1px solid #ececec;
+    }
+
+    .related-group-content {
+      padding: 14px;
+    }
+
+    .related-item {
+      padding: 12px 14px;
+      border: 1px solid #ececec;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      background: white;
+    }
+
+    .related-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .related-item:hover {
+      background: #f7f7f7;
+      transform: translateY(-1px);
+    }
+
+    .related-item-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    div.related-info-wrapper {
+      width: 22px;
+    }
+
+    .related-item-title {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .related-open-node {
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .related-open-node:hover {
+      color: #BC461B;
+    }
+
+    .related-accordion {
+      max-height: 0;
+      overflow: hidden;
+
+      transition:
+        max-height 0.3s ease,
+        margin-top 0.3s ease;
+
+      margin-top: 0;
+    }
+
+    .related-accordion.open {
+      max-height: 300px;
+      margin-top: 12px;
+    }
+
+    .related-accordion-text:last-child {
+      margin-bottom: 0;
+    }
+
+    .related-info-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #BC461B;
+      color: white;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 13px;
+      font-weight: bold;
+
+      cursor: pointer;
+
+      transition: 0.2s;
+    }
+
+    .related-info-icon:hover {
+      transform: scale(1.08);
+    }
+
+    .related-group {
+      border: 2px solid transparent;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .related-group.geo {
+      border-color: #1C9284;
+    }
+
+    .related-group.history {
+      border-color: #BC461B;
+    }
+
+    /* HEADER */
+    .related-group-header {
+      padding: 12px 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .related-group-header.geo {
+      background: #1C9284;
+    }
+
+    .related-group-header.history {
+      background: #BC461B;
+    }
+
+    .related-item {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      transition: 0.2s;
+    }
+
+    .related-item.geo {
+      border: 2px solid #1C9284;
+    }
+
+    .related-item.history {
+      border: 2px solid #BC461B;
+    }
+
+    .related-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .related-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .related-item-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .related-accordion {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+
+      transition:
+        max-height 0.35s ease,
+        opacity 0.25s ease,
+        margin-top 0.25s ease;
+
+      margin-top: 0;
+    }
+
+    .related-accordion.open {
+      max-height: 300px;
+      opacity: 1;
+      margin-top: 12px;
+    }
+
+    .related-accordion-text {
+      padding: 0px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      text-align: justify;
+      line-height: 1.4;
+      font-size: 14px;
+      color: #000000;
     }

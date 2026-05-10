@@ -113,24 +113,27 @@ app.get("/places", async (req, res) => {
         const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
 
         const type = r.properties.type || "geo";
+        const reason = r.properties.reason || "";
 
         if (!edgeMap.has(key)) {
           edgeMap.set(key, {
             id: key,
             source: id1 < id2 ? id1 : id2,
             target: id1 < id2 ? id2 : id1,
-            types: new Set()
+            relations: []
           });
         }
 
-        edgeMap.get(key).types.add(type);
+        edgeMap.get(key).relations.push({
+          type,
+          reason
+        });
       }
     });
 
     // Преобразуем Map в массив для отправки на фронтенд
     const edges = [];
     edgeMap.forEach(edge => {
-      edge.types = Array.from(edge.types);   // например: ["geo"] или ["geo", "history"]
       edges.push(edge);
     });
 
@@ -155,10 +158,8 @@ app.post("/places", async (req, res) => {
     return res.status(400).json({ error: "Некорректные данные: id и name обязательны" });
   }
 
-  const geo = node.geo || "";
-  if (geo && !geo.includes("yandex.ru/map-widget")) {
-    return res.status(400).json({ error: "Некорректная карта" });
-  }
+  const geo = (related || []).filter(r => r?.type === "geo");
+  const history = (related || []).filter(r => r?.type === "history");
 
   const session = driver.session();
 
@@ -232,7 +233,7 @@ app.post("/places", async (req, res) => {
         history: node.content?.history || "",
         modern: node.content?.modern || "",
         images: JSON.stringify(newImages),
-        geo: geo
+        geo: node.geo || ""
       }
     );
 
@@ -249,9 +250,12 @@ app.post("/places", async (req, res) => {
           `
           MATCH (a:Place {id: $sourceId})
           MATCH (b:Place {id: $targetId})
+
           MERGE (a)-[r:RELATED {type: $type}]-(b)
+
+          SET r.reason = $reason
           `,
-          { sourceId, targetId, type }
+          { sourceId, targetId, type, reason: rel.reason || "" }
         );
       }
     }

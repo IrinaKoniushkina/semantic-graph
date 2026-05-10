@@ -29,7 +29,7 @@ const CATEGORY_COLORS = {
 const ICONS = {
   museum: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width = "35" height = "35"  viewBox="0 0 50 50"><path d="M9.27 19h3.916l.602 18H8.749zM6 38h38v2h3v3h2v2H1v-2h2v-3h3zm40-24.188L25.002 5L4 13.812V15h42zM8 16h34v2H8zm28.736 3h3.914l.607 18h-5.046zm-9.152 0h3.914l.6 18h-5.041zm-9.154 0h3.915l.596 18h-5.039z"/></svg>`,
   church: `<svg class="icon" xmlns="http://www.w3.org/2000/svg"  width = "35" height = "35" viewBox="0 0 24 24"><path d="M10 22v-4a2 2 0 0 1 4 0v4h4V12a1 1 0 0 0-.485-.857L13 8.434V6h2V4h-2V2h-2v2H9v2h2v2.434l-4.515 2.709A1 1 0 0 0 6 12v10h4zm-7 0h2v-8.118l-2.447 1.224A.998.998 0 0 0 2 16v5a1 1 0 0 0 1 1zm18.447-6.895L19 13.882V22h2a1 1 0 0 0 1-1v-5c0-.379-.214-.725-.553-.895z"/></svg>`,
-  monument: `<svg class="icon" xmlns="http://www.w3.org/2000/svg"  width = "35" height = "35" viewBox="0 0 24 24"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path d="M16 5.236V17h1.75c.69 0 1.25.56 1.25 1.25V20h1a1 1 0 1 1 0 2H4a1 1 0 1 1 0-2h1v-1.75c0-.69.56-1.25 1.25-1.25H8V5.236L7.112 3.46a1.01 1.01 0 0 1 .778-1.454l3.955-.494a1.3 1.3 0 0 1 .31 0l3.955.494c.692.086 1.09.83.778 1.454z"/></g></svg>`,
+  monument: `<svg class="icon" xmlns="http://www.w3.org/2000/svg"  width = "35" height = "35" viewBox="0 0 24 24"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path d="M16 5.236V17h1.75c.69 0 1.25.56 1.25 1.25V20h1a1 1 0 1 1 0 2H4a1 1 0 1 1 0-2h1v-1.75c0-.69.56-1.25 1.25-1.25H8V5.236L7.112 3.46a1.01 1.01 0 0 1 .778-1.454l3.955-.494a1.3 1.3 0 0 1 .31 0l3.955.494c.692.086 1.09.83.778 1.454z"/></svg>`,
   park: `<svg class="icon" xmlns="http://www.w3.org/2000/svg"  width = "35" height = "35" viewBox="0 0 12 12"><path d="M11 3.75A1.75 1.75 0 0 0 9.25 2a1.73 1.73 0 0 0-.8.2A1.24 1.24 0 0 0 7.21 1a1.19 1.19 0 0 0-.21.05A1.23 1.23 0 0 0 5.75 0a1.25 1.25 0 0 0-1.13.73A1.21 1.21 0 0 0 4 .52a1.23 1.23 0 0 0-1 .55A1.491 1.491 0 0 0 2.51 1a1.51 1.51 0 0 0-1.4 2.08A1.49 1.49 0 0 0 1.08 6a1.49 1.49 0 0 0 2.55.52h.12c.321 0 .63-.126.86-.35V10L3 11h5l-1.6-1V9a8.42 8.42 0 0 1 2.38-2c.26-.05.5-.167.7-.34A1.49 1.49 0 0 0 10 5.5a1.46 1.46 0 0 0 0-.17c.61-.29 1-.904 1-1.58zm-4.64 4.5V6h.18a1.52 1.52 0 0 0 .53-.1a1.5 1.5 0 0 0 .89 1a8.821 8.821 0 0 0-1.6 1.35z"/></svg>`,
   building: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24"><path d="M15 11V5.83c0-.53-.21-1.04-.59-1.41L12.7 2.71a.996.996 0 0 0-1.41 0l-1.7 1.7C9.21 4.79 9 5.3 9 5.83V7H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6c0-1.1-.9-2-2-2zm-8 8H5v-2h2zm0-4H5v-2h2zm0-4H5V9h2zm6 8h-2v-2h2zm0-4h-2v-2h2zm0-4h-2V9h2zm0-4h-2V5h2zm6 12h-2v-2h2zm0-4h-2v-2h2z"/></svg>`,
   user: `<svg class="icon" xmlns="http://www.w3.org/2000/svg"  width = "35" height = "35" viewBox="0 0 22 22"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4s-4 1.79-4 4s1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4"/></svg>`
@@ -108,8 +108,8 @@ function updateSimulationLayout(smooth = true, delay = 0) {
 
   setTimeout(() => {
     d3.timer((elapsed) => {
-      const t = Math.min(1, elapsed / 1600);    
-      const k = 1 - Math.pow(1 - t, 5);          
+      const t = Math.min(1, elapsed / 1600);
+      const k = 1 - Math.pow(1 - t, 5);
 
       currentLayout.centerX += (target.centerX - currentLayout.centerX) * k * 0.085;
       currentLayout.centerY += (target.centerY - currentLayout.centerY) * k * 0.085;
@@ -245,7 +245,6 @@ function initGraph(data) {
   simulation.alphaTarget(0.1).restart();
 
   // РЁБРА
-  // РЁБРА
   const edges = linkGroup
     .selectAll("line")
     .data(data.edges)
@@ -255,7 +254,7 @@ function initGraph(data) {
       if (d.types && d.types.length === 2) {
         return "url(#edge-gradient)";        // градиент
       }
-      return d.types?.includes("history") || d.type === "history"
+      return d.relations?.some(r => r.type === "history") || d.type === "history"
         ? "#BC461B"
         : "#1C9284";
     })
@@ -653,20 +652,45 @@ function initGraph(data) {
     // Плавное появление панели + задержка движения графа
     setTimeout(() => {
       infoPanel.transition()
-        .duration(400)          
+        .duration(400)
         .style("opacity", 1);
       updateSimulationLayout(true, 80);
     }, 50);
     initTabs();
-    document.querySelectorAll(".related-item").forEach(item => {
-      item.onclick = (e) => {
-        e.stopPropagation();
 
+    // переход по связанному объекту
+    document.querySelectorAll(".related-open-node").forEach(item => {
+
+      item.onclick = (e) => {
+        if (e.target.closest(".accordion-toggle")) return;
         const id = item.dataset.id;
         const targetNode = data.nodes.find(n => n.id == id);
-
         if (targetNode) {
           nodeClicked(e, targetNode);
+        }
+      };
+    });
+
+    // аккордеон причины связи
+    document.querySelectorAll(".accordion-toggle").forEach(btn => {
+
+      btn.onclick = (e) => {
+
+        e.stopPropagation();
+
+        const item = btn.closest(".related-item");
+        const currentAccordion = item.querySelector(".related-accordion");
+        const isOpen = currentAccordion.classList.contains("open");
+
+        // закрываем все
+        document.querySelectorAll(".related-accordion")
+          .forEach(acc => {
+            acc.classList.remove("open");
+          });
+
+        // если текущий был закрыт → открыть
+        if (!isOpen) {
+          currentAccordion.classList.add("open");
         }
       };
     });
@@ -756,15 +780,15 @@ function initGraph(data) {
     });
   }
 
-function relaxGraph() {
-  updateSimulationLayout(true, 50);
-  simulation.alphaTarget(0.018).restart();
-}
+  function relaxGraph() {
+    updateSimulationLayout(true, 50);
+    simulation.alphaTarget(0.018).restart();
+  }
 
   function updateNodeTransform() {
     nodes.attr("transform", d => {
       const isActive = activeNode && d.id === activeNode.id;
-      const scale = isActive ? 1.65 : 1; 
+      const scale = isActive ? 1.65 : 1;
 
       return `
       translate(${d.x}, ${d.y})
@@ -780,27 +804,27 @@ function relaxGraph() {
   }
 
   // КЛИК ПО ФОНУ
-svg.on("click", () => {
-  if (!activeNode) return;
+  svg.on("click", () => {
+    if (!activeNode) return;
 
-  // Плавное скрытие панели
-  infoPanel.transition()
-    .duration(350)
-    .style("opacity", 0)
-    .on("end", () => {
-      infoPanel.style("display", "none");
-    });
+    // Плавное скрытие панели
+    infoPanel.transition()
+      .duration(350)
+      .style("opacity", 0)
+      .on("end", () => {
+        infoPanel.style("display", "none");
+      });
 
-  activeNode = null;
-  updateNodeTransform();
-  updateFilters();
+    activeNode = null;
+    updateNodeTransform();
+    updateFilters();
 
-  // Плавное "расползание" вершин после закрытия панели
-  setTimeout(() => {
-    updateSimulationLayout(true, 70);   // небольшая задержка
-    simulation.alphaTarget(0.05).restart(); // чуть сильнее, чтобы заметно разъехались
-  }, 180);
-});
+    // Плавное "расползание" вершин после закрытия панели
+    setTimeout(() => {
+      updateSimulationLayout(true, 70);   // небольшая задержка
+      simulation.alphaTarget(0.05).restart(); // чуть сильнее, чтобы заметно разъехались
+    }, 180);
+  });
 
   // ОПИСАНИЕ
   function formatDescription(text) {
@@ -815,22 +839,96 @@ svg.on("click", () => {
       .filter(e => e.source.id === node.id || e.target.id === node.id)
       .map(e => ({
         node: e.source.id === node.id ? e.target : e.source,
-        type: e.type
+        geoRelations: e.relations.filter(r => r.type === "geo"),
+        historyRelations: e.relations.filter(r => r.type === "history")
       }));
 
-    if (!related.length) return "<p>Нет связанных мест</p>";
+    if (!related.length) {
+      return "<p>Нет связанных мест</p>";
+    }
+
+    const geo = related.filter(r => r.geoRelations.length);
+    const history = related.filter(r => r.historyRelations.length);
+
+    function renderGroup(title, items, type) {
+
+      return `
+    <div class="related-group ${type}">
+
+      <div class="related-group-header ${type}">
+        <span>${title}</span>
+      </div>
+
+      <div class="related-group-content">
+
+        ${items.length
+          ? items.map(r => {
+
+            const reasons =
+              type === "history"
+                ? [...new Set(
+                  r.historyRelations
+                    .map(rel => rel.reason?.trim())
+                    .filter(Boolean)
+                )]
+                : [];
+
+            return `
+              <div class="related-item related-open-node ${type}" data-id="${r.node.id}">
+              <div class="related-item-main">
+                <div class="related-item-title">
+                  ${r.node.name}
+                </div>
+                ${type === "history" && reasons.length
+                ? `
+                    <div class="related-info-icon accordion-toggle">
+                      ?
+                    </div>
+                  `
+                : ""
+              }
+              </div>
+              ${type === "history" && reasons.length
+                ? `
+                  <div class="related-accordion">
+                    ${reasons.map(reason => `
+                      <div class="related-accordion-text">
+                        ${reason}
+                      </div>
+                    `).join("")}
+                  </div>
+                `
+                : ""
+              }
+
+          </div>
+            `;
+          }).join("")
+          : `<div class="related-empty">Нет связей</div>`
+        }
+
+      </div>
+
+    </div>
+  `;
+    }
 
     return `
-    <ul class="related-list">
-      ${related.map(r => `
-        <li class="related-item" data-id="${r.node.id}">
-          ${r.node.name}
-          <span style="color:${r.type === "history" ? "#BC461B" : "#1C9284"}">
-            ●
-          </span>
-        </li>
-      `).join("")}
-    </ul>
+    <div class="related-wrapper">
+
+      ${renderGroup(
+      "Географические связи",
+      geo,
+      "geo"
+    )}
+
+${renderGroup(
+      "Историко-культурные связи",
+      history,
+      "history"
+    )}
+
+    </div>
   `;
   }
 
