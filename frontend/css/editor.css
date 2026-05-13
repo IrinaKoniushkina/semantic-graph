@@ -656,7 +656,6 @@ input[type="radio"] {
   width: 300px;
 }
 
-
 .preview-item {
   width: 60px;
   display: flex;
@@ -897,4 +896,164 @@ button[disabled]:hover::after {
   white-space: nowrap;
   font-size: 12px;
   z-index: 1000;
+}
+
+/* =========================
+   ADMIN
+========================= */
+
+.admin-panel {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.admin-btn {
+  display: flex;
+  gap: 15px;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: 'Century Gothic';
+  font-size: 16px;
+  color: #5D474E;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tab-btn.active {
+  border: 2px solid #5D474E;
+  background: #ffffff;
+}
+
+.admin-content {
+  width: 100%;
+}
+
+.admin-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-title {
+  font-size: 32px;
+  font-family: 'Cormorant Infant';
+  color: #5D474E;
+  margin: 0;
+  text-align: center;
+}
+
+.users-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.users-list,
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.user-card,
+.history-card {
+  background: rgba(255, 255, 255, 0.75);
+  border: 2px solid rgba(93, 71, 78, 0.2);
+  border-radius: 10px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(3px);
+}
+
+.user-info,
+.history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.user-name,
+.history-action {
+  font-size: 18px;
+  font-weight: 700;
+  color: #5D474E;
+}
+
+.user-role,
+.history-date {
+  font-size: 14px;
+  color: #777;
+}
+
+.user-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-small-btn {
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Century Gothic';
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.admin-small-btn.edit {
+  background: #53B322;
+  color: white;
+}
+
+.admin-small-btn.delete {
+  background: #AD0304;
+  color: white;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 300px;
+}
+
+.admin-form select {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid #5D474E;
+  border-radius: 5px;
+  font-size: 16px;
+  font-family: 'Century Gothic';
+  background: white;
+}
+
+#imageCreditsToggle {
+  height: 20px;
+  width: 20px;
+  margin: 0;
+}
+
+.license-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+}
+
+#imageCreditsFields {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }

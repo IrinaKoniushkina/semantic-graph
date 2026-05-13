@@ -14,6 +14,19 @@
 
 <body>
   <div class="editor-box">
+    <div class="admin-panel">
+      <div class="admin-btn">
+        <button id="tab-editor" class="mode-btn tab-btn active">
+          <span>Граф</span>
+        </button>
+        <button id="tab-users" class="mode-btn tab-btn" style="display:none;">
+          <span>Пользователи</span>
+        </button>
+        <button id="tab-history" class="mode-btn tab-btn" style="display:none;">
+          <span>История</span>
+        </button>
+      </div>
+    </div>
     <div class="topPanel">
       <h1 id="title">Новая вершина</h1>
       <div class="top-buttons">
@@ -245,6 +258,53 @@
         </div>
       </div>
     </form>
+    <!-- USERS PANEL -->
+    <div id="users-panel" class="admin-content" style="display:none;">
+      <div class="admin-section">
+        <h2 class="admin-title">Пользователи</h2>
+
+        <div class="users-header">
+          <button id="open-create-user" class="wizard-btn submit">
+            Добавить пользователя
+          </button>
+        </div>
+
+        <div id="users-list" class="users-list"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY PANEL -->
+    <div id="history-panel" class="admin-content" style="display:none;">
+      <div class="admin-section">
+        <h2 class="admin-title">История изменений</h2>
+
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </div>
+
+    <!-- CREATE USER MODAL -->
+    <div id="createUserModal" class="modal">
+      <div class="modal-content">
+        <span class="modal-close" id="closeCreateUserModal">✕</span>
+
+        <p class="modal-text">Новый пользователь</p>
+
+        <div class="admin-form">
+          <input type="text" id="new-user-login" placeholder="Логин">
+
+          <input type="password" id="new-user-password" placeholder="Пароль">
+
+          <select id="new-user-role">
+            <option value="editor">Редактор</option>
+            <option value="admin">Администратор</option>
+          </select>
+
+          <button id="create-user-btn" class="wizard-btn submit">
+            Создать
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <!--Всплывающие окна-->
   <div id="toast" class="toast">Сохранено</div>
@@ -309,14 +369,22 @@
       </div>
       <div class="modal-divider">или</div>
       <input id="imageUrlInput" placeholder="URL на изображение">
+      <label class="license-toggle">
+        <input type="checkbox" id="imageCreditsToggle">
+        Лицензия / авторство
+      </label>
+      <div id="imageCreditsFields" style="display:none;">
+        <input type="text" id="imageAuthorInput" placeholder="Автор">
+        <input type="text" id="imageSourceInput" placeholder="Ссылка на источник">
+        <input type="text" id="imageLicenseInput" placeholder="Лицензия (например CC BY-SA 4.0)">
+      </div>
       <label class="caption-label">Подпись</label>
       <input id="imageCaptionInput" placeholder="Введите подпись"></input>
       <button id="addUrlBtn">Добавить</button>
       <div class="modal-close" id="closeImageModal">✕</div>
-
     </div>
   </div>
-  <script src="editor.js"></script>
+  <script src="js/editor.js"></script>
 </body>
 
 </html>

@@ -1,0 +1,450 @@
+[
+  {
+    "id": "1778673519693",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "irkutskaya_sloboda",
+    "date": "2026-05-13T11:58:39.693Z"
+  },
+  {
+    "id": "1778673522180",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "irkutskaya_sloboda",
+    "date": "2026-05-13T11:58:42.180Z"
+  },
+  {
+    "id": "1778674008768",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "belyy_dom",
+    "date": "2026-05-13T12:06:48.768Z"
+  },
+  {
+    "id": "1778674009309",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "belyy_dom",
+    "date": "2026-05-13T12:06:49.309Z"
+  },
+  {
+    "id": "1778675372669",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778675372483",
+    "date": "2026-05-13T12:29:32.669Z"
+  },
+  {
+    "id": "1778675675257",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778675675129",
+    "date": "2026-05-13T12:34:35.257Z"
+  },
+  {
+    "id": "1778677428930",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "tsentralnyy_rynok",
+    "date": "2026-05-13T13:03:48.931Z"
+  },
+  {
+    "id": "1778677429966",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "tsentralnyy_rynok",
+    "date": "2026-05-13T13:03:49.966Z"
+  },
+  {
+    "id": "1778677863966",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775498139436",
+    "date": "2026-05-13T13:11:03.966Z"
+  },
+  {
+    "id": "1778677864617",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775498139436",
+    "date": "2026-05-13T13:11:04.618Z"
+  },
+  {
+    "id": "1778678368720",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778678368451",
+    "date": "2026-05-13T13:19:28.721Z"
+  },
+  {
+    "id": "1778678501190",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "teatr_okhlopkova",
+    "date": "2026-05-13T13:21:41.190Z"
+  },
+  {
+    "id": "1778678503180",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "teatr_okhlopkova",
+    "date": "2026-05-13T13:21:43.180Z"
+  },
+  {
+    "id": "1778678634513",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "ledokol_angara",
+    "date": "2026-05-13T13:23:54.513Z"
+  },
+  {
+    "id": "1778678853099",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778678852956",
+    "date": "2026-05-13T13:27:33.099Z"
+  },
+  {
+    "id": "1778679361454",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778679361124",
+    "date": "2026-05-13T13:36:01.454Z"
+  },
+  {
+    "id": "1778679625431",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778679625369",
+    "date": "2026-05-13T13:40:25.431Z"
+  },
+  {
+    "id": "1778679793698",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778679793637",
+    "date": "2026-05-13T13:43:13.698Z"
+  },
+  {
+    "id": "1778680005743",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778680005507",
+    "date": "2026-05-13T13:46:45.743Z"
+  },
+  {
+    "id": "1778680122693",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1774967924025",
+    "date": "2026-05-13T13:48:42.694Z"
+  },
+  {
+    "id": "1778680180476",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1778678368451",
+    "date": "2026-05-13T13:49:40.476Z"
+  },
+  {
+    "id": "1778680180533",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1778678368451",
+    "date": "2026-05-13T13:49:40.533Z"
+  },
+  {
+    "id": "1778680444183",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "tunkinskiy_natsionalnyy_park",
+    "date": "2026-05-13T13:54:04.183Z"
+  },
+  {
+    "id": "1778680672244",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778680672138",
+    "date": "2026-05-13T13:57:52.244Z"
+  },
+  {
+    "id": "1778680843508",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1775376379911",
+    "date": "2026-05-13T14:00:43.508Z"
+  },
+  {
+    "id": "1778681106810",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778681106270",
+    "date": "2026-05-13T14:05:06.810Z"
+  },
+  {
+    "id": "1778681129750",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1774968030837",
+    "date": "2026-05-13T14:05:29.750Z"
+  },
+  {
+    "id": "1778681253789",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778681253020",
+    "date": "2026-05-13T14:07:33.790Z"
+  },
+  {
+    "id": "1778681380397",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "taltsy",
+    "date": "2026-05-13T14:09:40.398Z"
+  },
+  {
+    "id": "1778681382468",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "taltsy",
+    "date": "2026-05-13T14:09:42.468Z"
+  },
+  {
+    "id": "1778681542642",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1774968950032",
+    "date": "2026-05-13T14:12:22.642Z"
+  },
+  {
+    "id": "1778681543518",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1774968950032",
+    "date": "2026-05-13T14:12:23.518Z"
+  },
+  {
+    "id": "1778681784853",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778681783382",
+    "date": "2026-05-13T14:16:24.855Z"
+  },
+  {
+    "id": "1778682028138",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1775499731931",
+    "date": "2026-05-13T14:20:28.139Z"
+  },
+  {
+    "id": "1778682068848",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1774967235722",
+    "date": "2026-05-13T14:21:08.849Z"
+  },
+  {
+    "id": "1778682531795",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778682531341",
+    "date": "2026-05-13T14:28:51.796Z"
+  },
+  {
+    "id": "1778682660318",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778682660015",
+    "date": "2026-05-13T14:31:00.318Z"
+  },
+  {
+    "id": "1778682870385",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778682870281",
+    "date": "2026-05-13T14:34:30.385Z"
+  },
+  {
+    "id": "1778682977160",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778682977071",
+    "date": "2026-05-13T14:36:17.160Z"
+  },
+  {
+    "id": "1778683230180",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1777045394526",
+    "date": "2026-05-13T14:40:30.180Z"
+  },
+  {
+    "id": "1778683231184",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1777045394526",
+    "date": "2026-05-13T14:40:31.184Z"
+  },
+  {
+    "id": "1778683305926",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778683305834",
+    "date": "2026-05-13T14:41:45.927Z"
+  },
+  {
+    "id": "1778683416004",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778683415523",
+    "date": "2026-05-13T14:43:36.005Z"
+  },
+  {
+    "id": "1778683590580",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778683590081",
+    "date": "2026-05-13T14:46:30.580Z"
+  },
+  {
+    "id": "1778683720736",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778683720620",
+    "date": "2026-05-13T14:48:40.736Z"
+  },
+  {
+    "id": "1778684049999",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778684049484",
+    "date": "2026-05-13T14:54:09.999Z"
+  },
+  {
+    "id": "1778684218107",
+    "user": "admin",
+    "action": "CREATE_NODE",
+    "target": "1778684217999",
+    "date": "2026-05-13T14:56:58.107Z"
+  },
+  {
+    "id": "1778684362269",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775382423869",
+    "date": "2026-05-13T14:59:22.269Z"
+  },
+  {
+    "id": "1778684362610",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775382423869",
+    "date": "2026-05-13T14:59:22.610Z"
+  },
+  {
+    "id": "1778684486275",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775498584736",
+    "date": "2026-05-13T15:01:26.275Z"
+  },
+  {
+    "id": "1778684486355",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "1775498584736",
+    "date": "2026-05-13T15:01:26.355Z"
+  },
+  {
+    "id": "1778684506570",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1774967316828",
+    "date": "2026-05-13T15:01:46.570Z"
+  },
+  {
+    "id": "1778684514219",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "planetariy",
+    "date": "2026-05-13T15:01:54.219Z"
+  },
+  {
+    "id": "1778684527741",
+    "user": "admin",
+    "action": "DELETE_NODE",
+    "target": "1774968233876",
+    "date": "2026-05-13T15:02:07.741Z"
+  },
+  {
+    "id": "1778686493854",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T15:34:53.854Z"
+  },
+  {
+    "id": "1778686495308",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T15:34:55.308Z"
+  },
+  {
+    "id": "1778692513676",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:15:13.677Z"
+  },
+  {
+    "id": "1778692517062",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:15:17.062Z"
+  },
+  {
+    "id": "1778692866449",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:21:06.450Z"
+  },
+  {
+    "id": "1778692867359",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:21:07.359Z"
+  },
+  {
+    "id": "1778694190230",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:43:10.230Z"
+  },
+  {
+    "id": "1778694190665",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:43:10.665Z"
+  },
+  {
+    "id": "1778694427074",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:47:07.074Z"
+  },
+  {
+    "id": "1778694427350",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-13T17:47:07.350Z"
+  }
+]

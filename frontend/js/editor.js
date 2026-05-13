@@ -1,9 +1,15 @@
-if (localStorage.getItem("auth") !== "true") {
+
+const token = localStorage.getItem("token");
+
+if (!token) {
     window.location.href = "login.html";
 }
 
 document.getElementById("logout-btn").addEventListener("click", () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("auth");
+    localStorage.removeItem("user");
+
     window.location.href = "login.html";
 });
 
@@ -91,7 +97,6 @@ const step1Buttons = document.querySelector(".step-buttons-first");
 
 const step1NextBtn = document.getElementById("step1-next");
 
-
 const limits = {
     name: { min: 3, max: 30 },
     desc: { min: 250, max: 500 },
@@ -145,8 +150,12 @@ const closeImageModal = document.getElementById("closeImageModal");
 const addUrlBtn = document.getElementById("addUrlBtn");
 const imageCaptionInput = document.getElementById("imageCaptionInput");
 const imageUrlInput = document.getElementById("imageUrlInput");
+const imageCreditsToggle = document.getElementById("imageCreditsToggle");
+const imageCreditsFields = document.getElementById("imageCreditsFields");
+const imageAuthorInput = document.getElementById("imageAuthorInput");
+const imageSourceInput = document.getElementById("imageSourceInput");
+const imageLicenseInput = document.getElementById("imageLicenseInput");
 const geoInput = document.getElementById("geo-input");
-
 
 const tagTooltip = document.createElement("div");
 tagTooltip.className = "tag-tooltip";
@@ -160,7 +169,13 @@ const resetModalClose = document.getElementById("resetModalClose");
 // ЗАГРУЗКА ДАННЫХ
 async function fetchGraphData() {
     try {
-        const response = await fetch("http://localhost:5000/places");
+        const token = localStorage.getItem("token");
+
+        const response = await fetch("http://localhost:5000/places", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
 
         if (!response.ok) {
             throw new Error("Ошибка загрузки графа");
@@ -358,6 +373,14 @@ document.querySelectorAll('.editor').forEach(editor => {
     });
 });
 
+imageCreditsToggle.addEventListener("change", () => {
+
+    imageCreditsFields.style.display =
+        imageCreditsToggle.checked
+            ? "flex"
+            : "none";
+});
+
 // ЗАГРУЗКА ИЗОБРАЖЕНИЙ
 async function uploadImages() {
     if (newImages.length === 0) return [];
@@ -368,8 +391,13 @@ async function uploadImages() {
         formData.append("images", item.file);
     }
 
+    const token = localStorage.getItem("token");
+
     const res = await fetch("http://localhost:5000/upload-images", {
         method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
         body: formData
     });
 
@@ -446,8 +474,13 @@ deleteNo.onclick = () => modal.style.display = "none"
 modalClose.onclick = () => modal.style.display = "none"
 
 deleteYes.onclick = async () => {
+    const token = localStorage.getItem("token");
+
     await fetch("http://localhost:5000/places/" + editingNode.id, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
     })
     modal.style.display = "none"
     showToast("Вершина удалена")
@@ -1018,6 +1051,30 @@ function openImageEditor(item = null) {
 
     if (item) {
 
+        if (item.credits) {
+
+            imageCreditsToggle.checked = true;
+            imageCreditsFields.style.display = "flex";
+
+            imageAuthorInput.value =
+                item.credits.author || "";
+
+            imageSourceInput.value =
+                item.credits.source || "";
+
+            imageLicenseInput.value =
+                item.credits.license || "";
+
+        } else {
+
+            imageCreditsToggle.checked = false;
+            imageCreditsFields.style.display = "none";
+
+            imageAuthorInput.value = "";
+            imageSourceInput.value = "";
+            imageLicenseInput.value = "";
+        }
+
         // ИЩЕМ ГДЕ ЛЕЖИТ ОБЪЕКТ
         currentEditingIndex =
             existingImages.indexOf(item);
@@ -1037,6 +1094,7 @@ function openImageEditor(item = null) {
         addUrlBtn.textContent = "Изменить";
 
         captionInput.value = item.caption || "";
+        imageLicenseInput.value = item.license || "";
 
         // FILE
         if (item.file) {
@@ -1067,8 +1125,14 @@ function openImageEditor(item = null) {
 
         addUrlBtn.textContent = "Добавить";
 
-        captionInput.value = "";
+        imageCreditsToggle.checked = false;
+        imageCreditsFields.style.display = "none";
 
+        imageAuthorInput.value = "";
+        imageSourceInput.value = "";
+        imageLicenseInput.value = "";
+
+        captionInput.value = "";
         imageUrlInput.value = "";
 
         hideModalPreview();
@@ -1090,30 +1154,19 @@ uploadBox.addEventListener("click", () => {
 });
 
 uploadFromDevice.addEventListener("click", () => {
-
     const input = document.createElement("input");
-
     input.type = "file";
     input.accept = "image/*";
-
     input.onchange = () => {
-
         const file = input.files[0];
-
         if (!file) return;
-
         pendingFile = file;
-
         const reader = new FileReader();
-
         reader.onload = e => {
-
             showModalPreview(e.target.result);
         };
-
         reader.readAsDataURL(file);
     };
-
     input.click();
 });
 
@@ -1124,8 +1177,8 @@ removeModalPreview.addEventListener("click", () => {
 addUrlBtn.addEventListener("click", () => {
 
     const caption = document.getElementById("imageCaptionInput")
-        .value
-        .trim();
+        .value.trim();
+    const license = imageLicenseInput.value.trim();
 
     if (caption.length < MIN_IMAGE_CAPTION) {
         showToast("Добавьте подпись к изображению");
@@ -1134,77 +1187,73 @@ addUrlBtn.addEventListener("click", () => {
 
     const url = imageUrlInput.value.trim();
 
-    // ====================================
-    // РЕДАКТИРОВАНИЕ
-    // ====================================
+    let credits = null;
 
+    if (imageCreditsToggle.checked) {
+        credits = {
+            author: imageAuthorInput.value.trim(),
+            source: imageSourceInput.value.trim(),
+            license: imageLicenseInput.value.trim()
+        };
+        Object.keys(credits).forEach(key => {
+            if (!credits[key]) {
+                delete credits[key];
+            }
+        });
+        if (Object.keys(credits).length === 0) {
+            credits = null;
+        }
+    }
+
+    // РЕДАКТИРОВАНИЕ
     if (currentEditingImage) {
 
-        // ОБНОВЛЯЕМ ПОДПИСЬ ВСЕГДА
         currentEditingImage.caption = caption;
+        if (credits) {
+            currentEditingImage.credits = credits;
+        } else {
+            delete currentEditingImage.credits;
+        }
 
-        // =========================
         // НОВЫЙ FILE
-        // =========================
-
         if (pendingFile) {
-
             currentEditingImage.file = pendingFile;
-
             delete currentEditingImage.src;
-
             currentEditingImage.type = "new";
         }
 
-        // =========================
         // НОВЫЙ URL
-        // =========================
-
         else if (url) {
-
             currentEditingImage.src = url;
-
             delete currentEditingImage.file;
-
             currentEditingImage.type = "url";
         }
-
         imageModal.style.display = "none";
-
         renderPreview();
-
         return;
     }
 
-    // ====================================
     // СОЗДАНИЕ FILE
-    // ====================================
-
     if (pendingFile) {
-
         newImages.push({
             file: pendingFile,
             caption,
+            credits,
             type: "new"
         });
-
         imageModal.style.display = "none";
-
         renderPreview();
-
         return;
     }
-
     if (!url) {
-
         showToast("Добавьте изображение");
-
         return;
     }
 
     existingImages.push({
         src: url,
         caption,
+        credits,
         type: "url"
     });
 
@@ -1214,24 +1263,15 @@ addUrlBtn.addEventListener("click", () => {
 });
 
 closeImageModal.addEventListener("click", () => {
-
-    const confirmClose =
-        confirm("Сбросить изменения?");
-
+    const confirmClose = confirm("Сбросить изменения?");
     if (!confirmClose) return;
-
     imageModal.style.display = "none";
-
     pendingFile = null;
-
     if (tempImageData && currentEditingImage) {
-
         Object.keys(currentEditingImage)
             .forEach(key => delete currentEditingImage[key]);
-
         Object.assign(currentEditingImage, tempImageData);
     }
-
     hideModalPreview();
 });
 
@@ -1250,7 +1290,6 @@ const nameCounter = document.getElementById("name-counter");
 form.addEventListener("submit", async (e) => {
     e.preventDefault()
 
-    // console.log(nodeData);
     if (!nameInput.value.trim()) {
         showToast("Введите название");
         return;
@@ -1267,12 +1306,14 @@ form.addEventListener("submit", async (e) => {
 
     const newImageObjects = uploaded.map((src, i) => ({
         src,
-        caption: newImages[i]?.caption ?? ""
+        caption: newImages[i]?.caption ?? "",
+        credits: newImages[i]?.credits ?? null
     }));
 
     const normalizedExisting = existingImages.map(i => ({
         src: i.src,
-        caption: i.caption ?? ""
+        caption: i.caption ?? "",
+        credits: i.credits ?? null
     }));
 
     const allImages = [...normalizedExisting, ...newImageObjects];
@@ -1306,13 +1347,18 @@ form.addEventListener("submit", async (e) => {
         related: selectedRelations.length ? selectedRelations : null,
         mode: editingNode ? "edit" : "add"
     }
-    console.log("MODE:", editingNode ? "edit" : "add");
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        window.location.href = "login.html";
+    }
+
     const res = await fetch("http://localhost:5000/places", {
-
         method: "POST",
-
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(body)
     })
@@ -1511,4 +1557,344 @@ document.querySelectorAll(".prev-step")
         });
     });
 
+// ====================== АДМИН ВКЛАДКИ ======================
+
+let currentTab = "editor";
+
+async function initAdminInterface() {
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return;
+
+    const user = JSON.parse(userStr);
+
+    if (user.role === "admin") {
+        document.getElementById("tab-users").style.display = "inline-flex";
+        document.getElementById("tab-history").style.display = "inline-flex";
+    }
+}
+
+function switchTab(tab) {
+
+    currentTab = tab;
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle(
+            "active",
+            btn.id === `tab-${tab}`
+        );
+    });
+
+    const form = document.getElementById("form");
+    const usersPanel =
+        document.getElementById("users-panel");
+    const historyPanel =
+        document.getElementById("history-panel");
+
+    form.style.display =
+        tab === "editor" ? "block" : "none";
+
+    usersPanel.style.display =
+        tab === "users" ? "block" : "none";
+
+    historyPanel.style.display =
+        tab === "history" ? "block" : "none";
+
+    if (tab === "users") {
+        loadUsersPanel();
+    }
+
+    if (tab === "history") {
+        loadHistoryPanel();
+    }
+}
+
+// Привязываем кнопки
+document.getElementById("tab-editor").addEventListener("click", () => switchTab("editor"));
+document.getElementById("tab-users").addEventListener("click", () => switchTab("users"));
+document.getElementById("tab-history").addEventListener("click", () => switchTab("history"));
+
+// Инициализация при загрузке
+document.addEventListener("DOMContentLoaded", () => {
+    initAdminInterface();
+    // Если нужно открыть сразу определённую вкладку из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'users') switchTab('users');
+});
+
 updateStepsUI();
+
+// ======================
+// USERS PANEL
+// ======================
+
+async function loadUsersPanel() {
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+        "http://localhost:5000/users",
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    if (!res.ok) return;
+
+    const users = await res.json();
+
+    const container =
+        document.getElementById("users-list");
+
+    container.innerHTML = "";
+
+    users.forEach(user => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "user-card";
+
+        card.innerHTML = `
+            <div class="user-info">
+                <div class="user-name">
+                    ${user.login}
+                </div>
+
+                <div class="user-role">
+                    ${user.role}
+                </div>
+            </div>
+
+            <div class="user-actions">
+                <button
+                    class="admin-small-btn edit"
+                    onclick="changeUserRole('${user.id}', '${user.role}')"
+                >
+                    Сменить роль
+                </button>
+
+                <button
+                    class="admin-small-btn delete"
+                    onclick="deleteUser('${user.id}')"
+                >
+                    Удалить
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+// ======================
+// HISTORY PANEL
+// ======================
+
+async function loadHistoryPanel() {
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+        "http://localhost:5000/history",
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    if (!res.ok) return;
+
+    const history = await res.json();
+
+    const container =
+        document.getElementById("history-list");
+
+    container.innerHTML = "";
+
+    history.reverse().forEach(item => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "history-card";
+
+        card.innerHTML = `
+            <div class="history-info">
+
+                <div class="history-action">
+                    ${item.user}
+                </div>
+
+                <div class="history-date">
+                    ${item.action}
+                </div>
+
+                <div class="history-date">
+                    ${new Date(item.date)
+                .toLocaleString()}
+                </div>
+
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+// ======================
+// CREATE USER
+// ======================
+
+const createUserModal =
+    document.getElementById("createUserModal");
+
+document
+    .getElementById("open-create-user")
+    .addEventListener("click", () => {
+
+        createUserModal.style.display = "flex";
+    });
+
+document
+    .getElementById("closeCreateUserModal")
+    .addEventListener("click", () => {
+
+        createUserModal.style.display = "none";
+    });
+
+document
+    .getElementById("create-user-btn")
+    .addEventListener("click", async () => {
+
+        const login =
+            document
+                .getElementById("new-user-login")
+                .value
+                .trim();
+
+        const password =
+            document
+                .getElementById("new-user-password")
+                .value
+                .trim();
+
+        const role =
+            document
+                .getElementById("new-user-role")
+                .value;
+
+        if (!login || !password) {
+            showToast("Заполните все поля");
+            return;
+        }
+
+        const token =
+            localStorage.getItem("token");
+
+        const res = await fetch(
+            "http://localhost:5000/users",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+
+                body: JSON.stringify({
+                    login,
+                    password,
+                    role
+                })
+            }
+        );
+
+        if (res.ok) {
+
+            createUserModal.style.display =
+                "none";
+
+            loadUsersPanel();
+
+            showToast("Пользователь создан");
+
+        } else {
+
+            showToast("Ошибка создания");
+        }
+    });
+
+// ======================
+// CHANGE ROLE
+// ======================
+
+async function changeUserRole(id, currentRole) {
+
+    const newRole =
+        currentRole === "admin"
+            ? "editor"
+            : "admin";
+
+    const token =
+        localStorage.getItem("token");
+
+    const res = await fetch(
+        `http://localhost:5000/users/${id}/role`,
+        {
+            method: "PATCH",
+
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+
+            body: JSON.stringify({
+                role: newRole
+            })
+        }
+    );
+
+    if (res.ok) {
+
+        loadUsersPanel();
+
+        showToast("Роль изменена");
+    }
+}
+
+// ======================
+// DELETE USER
+// ======================
+
+async function deleteUser(id) {
+
+    const confirmDelete =
+        confirm("Удалить пользователя?");
+
+    if (!confirmDelete) return;
+
+    const token =
+        localStorage.getItem("token");
+
+    const res = await fetch(
+        `http://localhost:5000/users/${id}`,
+        {
+            method: "DELETE",
+
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    if (res.ok) {
+
+        loadUsersPanel();
+
+        showToast("Пользователь удалён");
+    }
+}
+

@@ -29,6 +29,9 @@ const app = express()
 const PORT = 5000
 
 const multer = require("multer")
+const { login } = require('./auth');
+const { authMiddleware, adminOnly } = require('./middleware/auth');
+const { logAction } = require('./history');
 const upload = multer({ storage: multer.memoryStorage() })
 
 const USERS_FILE = path.join(__dirname, "users.json");
@@ -36,27 +39,20 @@ const USERS_FILE = path.join(__dirname, "users.json");
 app.use(cors())
 app.use(express.json())
 
-// АВТОРИЗАЦИЯ
-function readUsers() {
-  if (!fs.existsSync(USERS_FILE)) {
-    return { users: [] };
-  }
-  return JSON.parse(fs.readFileSync(USERS_FILE));
-}
-
+// ====================== LOGIN ======================
 app.post("/login", (req, res) => {
-  const { login, password } = req.body;
-  const data = readUsers();
-  const user = data.users.find(u =>
-    u.login === login && u.password === password
-  );
-  if (!user) {
+  console.log(req.body);
+  const { login: username, password } = req.body;
+  const result = login(username, password);
+
+  if (!result) {
     return res.status(401).json({ error: "Неверный логин или пароль" });
   }
-  res.json({ success: true });
+
+  console.log("Успешный вход:", username);
+  res.json(result);
 });
 
-// ПОЛУЧИТЬ ГРАФ
 // ПОЛУЧИТЬ ГРАФ
 app.get("/places", async (req, res) => {
   const session = driver.session();
@@ -151,7 +147,7 @@ app.get("/places", async (req, res) => {
 });
 
 // ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
-app.post("/places", async (req, res) => {
+app.post("/places", authMiddleware, async (req, res) => {
   const { node, related, mode } = req.body;
 
   if (!node || !node.id || !node.name?.trim()) {
@@ -172,6 +168,11 @@ app.post("/places", async (req, res) => {
       const oldRes = await session.run(
         `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
         { id: node.id }
+      );
+      logAction(
+        req.user.login,
+        isEdit ? "EDIT_NODE" : "CREATE_NODE",
+        node.id
       );
 
       if (oldRes.records.length) {
@@ -259,6 +260,11 @@ app.post("/places", async (req, res) => {
         );
       }
     }
+    logAction(
+      req.user.login,
+      isEdit ? "EDIT_NODE" : "CREATE_NODE",
+      node.id
+    );
 
     res.json({ success: true });
 
@@ -271,7 +277,7 @@ app.post("/places", async (req, res) => {
 });
 
 // УДАЛИТЬ ВЕРШИНУ
-app.delete("/places/:id", async (req, res) => {
+app.delete("/places/:id", authMiddleware, async (req, res) => {
   const id = String(req.params.id);
   const session = driver.session();
 
@@ -311,7 +317,7 @@ app.delete("/places/:id", async (req, res) => {
       `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
     );
-
+    logAction(req.user.login, "DELETE_NODE", id);
     res.json({ success: true });
 
   } catch (err) {
@@ -323,7 +329,7 @@ app.delete("/places/:id", async (req, res) => {
 });
 
 //ЗАГРУЗКА ИЗОБРАЖЕНИЯ
-app.post("/upload-images", (req, res) => {
+app.post("/upload-images", authMiddleware, (req, res) => {
   upload.array("images")(req, res, async (err) => {
 
     if (err) {
@@ -364,6 +370,55 @@ app.post("/upload-images", (req, res) => {
 
   });
 });
+
+// ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+app.get("/users", authMiddleware, adminOnly, (req, res) => {
+  try {
+    if (!fs.existsSync(USERS_FILE)) {
+      return res.json([]);
+    }
+
+    const data = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+
+    const users = Array.isArray(data)
+      ? data
+      : (data.users || []);
+
+    // не отправляем пароли
+    const safeUsers = users.map(user => ({
+      id: user.id,
+      login: user.login,
+      role: user.role
+    }));
+
+    res.json(safeUsers);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Ошибка получения пользователей" });
+  }
+});
+
+// ПОЛУЧИТЬ ИСТОРИЮ ИЗМЕНЕНИЙ
+app.get("/history", authMiddleware, adminOnly, (req, res) => {
+  try {
+    const HISTORY_FILE = path.join(__dirname, "history.json");
+
+    if (!fs.existsSync(HISTORY_FILE)) {
+      return res.json([]);
+    }
+
+    const history = JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
+
+    res.json(history);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Ошибка получения истории" });
+  }
+});
+
+
 
 app.listen(PORT, () => {
   console.log("Server running on http://localhost:" + PORT)
