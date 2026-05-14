@@ -166,7 +166,7 @@ const resetYes = document.getElementById("resetYes");
 const resetNo = document.getElementById("resetNo");
 const resetModalClose = document.getElementById("resetModalClose");
 
-// ЗАГРУЗКА ДАННЫХ
+// загрузка данных
 async function fetchGraphData() {
     try {
         const token = localStorage.getItem("token");
@@ -381,7 +381,7 @@ imageCreditsToggle.addEventListener("change", () => {
             : "none";
 });
 
-// ЗАГРУЗКА ИЗОБРАЖЕНИЙ
+// загрузка изображений
 async function uploadImages() {
     if (newImages.length === 0) return [];
 
@@ -412,7 +412,7 @@ async function uploadImages() {
         return [];
     }
 }
-// ИКОНКИ
+// иконки
 iconPicker.querySelectorAll("svg").forEach(svg => {
     svg.addEventListener("click", () => {
         selectedIcon = svg.dataset.icon;
@@ -423,7 +423,7 @@ iconPicker.querySelectorAll("svg").forEach(svg => {
         svg.classList.add("active");
         updateWizardButtons();
     });
-    // ТУЛТИПЫ
+    // тултипы
     svg.onmouseenter = (e) => {
         const text = iconDescriptions[svg.dataset.icon] || "";
 
@@ -439,7 +439,7 @@ iconPicker.querySelectorAll("svg").forEach(svg => {
     };
 });
 
-//РЕЖИМЫ
+//режимы
 btnEdit.addEventListener("click", () => {
     clearForm()
     mode = "edit"
@@ -464,7 +464,7 @@ btnAdd.addEventListener("click", () => {
     document.getElementById("save-btn").textContent = "Добавить вершину в граф"
 });
 
-//УДАЛЕНИЕ ВЕРШИНЫ
+//удаление вершины
 deleteBtn.addEventListener("click", () => {
     if (!editingNode) return
     modal.style.display = "flex"
@@ -505,12 +505,11 @@ nameInput.addEventListener("input", () => {
     showNameDropdown(nameInput.value);
 });
 
-//АВТОЗАПОЛНЕНИЕ
+//автозаполнение
 function showNameDropdown(filter = "") {
 
     nameDropdown.innerHTML = "";
 
-    // режим ADD → показываем ТОЛЬКО если есть ввод
     if (mode === "add" && !filter.trim()) {
         nameDropdown.style.display = "none";
         return;
@@ -520,7 +519,7 @@ function showNameDropdown(filter = "") {
         n.name.toLowerCase().includes(filter.toLowerCase())
     );
 
-    // если нет совпадений → скрываем (в add)
+   
     if (mode === "add" && results.length === 0) {
         nameDropdown.style.display = "none";
         return;
@@ -531,9 +530,8 @@ function showNameDropdown(filter = "") {
         div.textContent = n.name;
 
         div.addEventListener("click", () => {
-            // 🔥 КЛЮЧЕВОЕ ПОВЕДЕНИЕ
+            
             if (mode === "add") {
-                // переключаемся в режим редактирования
                 mode = "edit";
 
                 btnEdit.style.display = "none";
@@ -618,7 +616,7 @@ function selectNode(node) {
         const relatedNode = allNodes.find(n => n.id === relatedId);
 
         if (relatedNode) {
-            // Добавляем через функцию, чтобы всё было единообразно
+        
             if (edge.relations) {
                 edge.relations.forEach(rel => {
                     addRelation(relatedNode, rel.type, rel.reason);
@@ -687,7 +685,6 @@ function addCategory(cat) {
     categoryDropdown.style.display = "none";
 }
 
-// DROPDOWN СВЯЗИ
 relationSearch.addEventListener("focus", showAllRelation);
 relationSearch.addEventListener("click", showAllRelation);
 relationSearch.addEventListener("input", showAllRelation);
@@ -701,7 +698,7 @@ function showAllRelation() {
     const results = allNodes.filter(n => {
         if (n.id === editingNode?.id) return false; // нельзя связать с собой
 
-        // Проверяем, есть ли уже связь именно с текущим выбранным типом
+       
         const alreadyHasThisType = selectedRelations.some(r =>
             r.id === n.id && r.type === currentType
         );
@@ -720,7 +717,6 @@ function showAllRelation() {
     relationDropdown.style.display = "block";
 }
 
-// ====================== ADD RELATION ======================
 function addRelation(node, forcedType = null, forcedReason = "") {
     const type = forcedType || getSelectedRelationType();
     // Запрет самопетли
@@ -743,7 +739,7 @@ function addRelation(node, forcedType = null, forcedReason = "") {
 
     selectedRelations.push(relation);
 
-    // Визуальное отображение тега
+    // отображение тега
     const tag = document.createElement("div");
     const color = type === "geo" ? "#1C9284" : "#BC461B";
     tag.className = "tag";
@@ -887,7 +883,6 @@ cancelRelationReasonBtn.addEventListener("click", () => {
     closeRelationReasonEditor();
 });
 
-// ПРЕДПРОСМОТР КАРТИНОК
 imagesInput.addEventListener("change", () => {
     const files = Array.from(imagesInput.files);
 
@@ -1075,7 +1070,6 @@ function openImageEditor(item = null) {
             imageLicenseInput.value = "";
         }
 
-        // ИЩЕМ ГДЕ ЛЕЖИТ ОБЪЕКТ
         currentEditingIndex =
             existingImages.indexOf(item);
 
@@ -1205,7 +1199,7 @@ addUrlBtn.addEventListener("click", () => {
         }
     }
 
-    // РЕДАКТИРОВАНИЕ
+    
     if (currentEditingImage) {
 
         currentEditingImage.caption = caption;
@@ -1215,14 +1209,12 @@ addUrlBtn.addEventListener("click", () => {
             delete currentEditingImage.credits;
         }
 
-        // НОВЫЙ FILE
+        
         if (pendingFile) {
             currentEditingImage.file = pendingFile;
             delete currentEditingImage.src;
             currentEditingImage.type = "new";
         }
-
-        // НОВЫЙ URL
         else if (url) {
             currentEditingImage.src = url;
             delete currentEditingImage.file;
@@ -1232,8 +1224,6 @@ addUrlBtn.addEventListener("click", () => {
         renderPreview();
         return;
     }
-
-    // СОЗДАНИЕ FILE
     if (pendingFile) {
         newImages.push({
             file: pendingFile,
@@ -1275,7 +1265,7 @@ closeImageModal.addEventListener("click", () => {
     hideModalPreview();
 });
 
-//УВЕДОМЛЕНИЯ
+//уведомление
 function showToast(text) {
     toast.textContent = text
     toast.classList.add("show")
@@ -1286,7 +1276,6 @@ function showToast(text) {
 
 const nameCounter = document.getElementById("name-counter");
 
-//ОТПРАВКА ФОРМЫ
 form.addEventListener("submit", async (e) => {
     e.preventDefault()
 
@@ -1399,7 +1388,7 @@ function clearImages() {
     preview.innerHTML = "";
 }
 
-//ОЧИСТКА ФОРМЫ
+//очистка формы
 function clearForm() {
 
     mode = "add";
@@ -1441,8 +1430,6 @@ function clearForm() {
     updateDisabledStyles();
 }
 
-// ======================
-// RESET FORM
 resetNo.addEventListener("click", () => {
     resetModal.style.display = "none";
 });
@@ -1491,9 +1478,7 @@ document.querySelectorAll(".editor-tabs .tab").forEach(tab => {
     });
 });
 
-// =========================
-// WIZARD STEPS
-// =========================
+
 
 let currentStep = 1;
 
@@ -1557,7 +1542,6 @@ document.querySelectorAll(".prev-step")
         });
     });
 
-// ====================== АДМИН ВКЛАДКИ ======================
 
 let currentTab = "editor";
 
@@ -1608,7 +1592,6 @@ function switchTab(tab) {
     }
 }
 
-// Привязываем кнопки
 document.getElementById("tab-editor").addEventListener("click", () => switchTab("editor"));
 document.getElementById("tab-users").addEventListener("click", () => switchTab("users"));
 document.getElementById("tab-history").addEventListener("click", () => switchTab("history"));
@@ -1616,16 +1599,13 @@ document.getElementById("tab-history").addEventListener("click", () => switchTab
 // Инициализация при загрузке
 document.addEventListener("DOMContentLoaded", () => {
     initAdminInterface();
-    // Если нужно открыть сразу определённую вкладку из URL
+    
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('tab') === 'users') switchTab('users');
 });
 
 updateStepsUI();
 
-// ======================
-// USERS PANEL
-// ======================
 
 async function loadUsersPanel() {
 
@@ -1688,9 +1668,6 @@ async function loadUsersPanel() {
     });
 }
 
-// ======================
-// HISTORY PANEL
-// ======================
 
 async function loadHistoryPanel() {
 
@@ -1743,10 +1720,6 @@ async function loadHistoryPanel() {
         container.appendChild(card);
     });
 }
-
-// ======================
-// CREATE USER
-// ======================
 
 const createUserModal =
     document.getElementById("createUserModal");
@@ -1827,9 +1800,6 @@ document
         }
     });
 
-// ======================
-// CHANGE ROLE
-// ======================
 
 async function changeUserRole(id, currentRole) {
 
@@ -1865,9 +1835,7 @@ async function changeUserRole(id, currentRole) {
     }
 }
 
-// ======================
-// DELETE USER
-// ======================
+
 
 async function deleteUser(id) {
 
