@@ -39,7 +39,7 @@ const USERS_FILE = path.join(__dirname, "users.json");
 app.use(cors())
 app.use(express.json())
 
-// ====================== LOGIN ======================
+//логин
 app.post("/login", (req, res) => {
   console.log(req.body);
   const { login: username, password } = req.body;
@@ -65,12 +65,12 @@ app.get("/places", async (req, res) => {
     `);
 
     const nodesMap = {};
-    const edgeMap = new Map(); // ← Новый способ обработки связей
+    const edgeMap = new Map();
 
     result.records.forEach(record => {
       const p = record.get("p").properties;
 
-      // === НОДЫ ===
+      //вершины
       if (!nodesMap[p.id]) {
         let images = [];
         try {
@@ -97,7 +97,7 @@ app.get("/places", async (req, res) => {
         };
       }
 
-      // === СВЯЗИ ===
+      //связи
       const r = record.get("r");
       const other = record.get("other");
 
@@ -105,7 +105,6 @@ app.get("/places", async (req, res) => {
         const id1 = p.id;
         const id2 = other.properties.id;
 
-        // Создаём уникальный ключ для пары нод (независимо от порядка)
         const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
 
         const type = r.properties.type || "geo";
@@ -126,8 +125,6 @@ app.get("/places", async (req, res) => {
         });
       }
     });
-
-    // Преобразуем Map в массив для отправки на фронтенд
     const edges = [];
     edgeMap.forEach(edge => {
       edges.push(edge);
@@ -146,7 +143,7 @@ app.get("/places", async (req, res) => {
   }
 });
 
-// ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
+// добавить или изменить вершину
 app.post("/places", authMiddleware, async (req, res) => {
   const { node, related, mode } = req.body;
 
@@ -163,7 +160,7 @@ app.post("/places", authMiddleware, async (req, res) => {
     const isEdit = mode === "edit";
     let oldImages = [];
 
-    // 1. Получаем старые изображения (только при редактировании)
+    // получаем старые изображения
     if (isEdit) {
       const oldRes = await session.run(
         `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
@@ -182,8 +179,7 @@ app.post("/places", authMiddleware, async (req, res) => {
     }
 
     const newImages = node.content?.description?.images || [];
-
-    // 2. Удаляем лишние изображения из S3
+    
     if (isEdit) {
       const imagesToDelete = oldImages.filter(oldImg =>
         !newImages.some(newImg => newImg?.src === oldImg?.src)
@@ -202,7 +198,6 @@ app.post("/places", authMiddleware, async (req, res) => {
       }
     }
 
-    // 3. Удаляем старые связи (перед обновлением ноды)
     if (isEdit) {
       await session.run(
         `MATCH (p:Place {id: $id})-[r:RELATED]-() DELETE r`,
@@ -210,7 +205,6 @@ app.post("/places", authMiddleware, async (req, res) => {
       );
     }
 
-    // 4. Создаём / обновляем ноду
     await session.run(
       `
       MERGE (p:Place {id: $id})
@@ -238,7 +232,6 @@ app.post("/places", authMiddleware, async (req, res) => {
       }
     );
 
-    // 5. Добавляем новые связи
     if (Array.isArray(related) && related.length > 0) {
       for (const rel of related) {
         if (!rel?.id) continue;
@@ -276,13 +269,13 @@ app.post("/places", authMiddleware, async (req, res) => {
   }
 });
 
-// УДАЛИТЬ ВЕРШИНУ
+// удалить вершину
 app.delete("/places/:id", authMiddleware, async (req, res) => {
   const id = String(req.params.id);
   const session = driver.session();
 
   try {
-    // 1. Получаем изображения
+    //получить изображения
     const result = await session.run(
       `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
       { id }
@@ -295,7 +288,6 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
       images = JSON.parse(raw || "[]");
     }
 
-    // 2. Удаляем файлы из S3
     for (const img of images) {
       if (!img?.src) continue;
 
@@ -311,8 +303,6 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
         console.warn("Ошибка удаления файла:", key, e.message);
       }
     }
-
-    // 3. Удаляем ноду
     await session.run(
       `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
@@ -328,7 +318,6 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
   }
 });
 
-//ЗАГРУЗКА ИЗОБРАЖЕНИЯ
 app.post("/upload-images", authMiddleware, (req, res) => {
   upload.array("images")(req, res, async (err) => {
 
@@ -371,7 +360,6 @@ app.post("/upload-images", authMiddleware, (req, res) => {
   });
 });
 
-// ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
 app.get("/users", authMiddleware, adminOnly, (req, res) => {
   try {
     if (!fs.existsSync(USERS_FILE)) {
@@ -384,7 +372,6 @@ app.get("/users", authMiddleware, adminOnly, (req, res) => {
       ? data
       : (data.users || []);
 
-    // не отправляем пароли
     const safeUsers = users.map(user => ({
       id: user.id,
       login: user.login,
@@ -399,7 +386,6 @@ app.get("/users", authMiddleware, adminOnly, (req, res) => {
   }
 });
 
-// ПОЛУЧИТЬ ИСТОРИЮ ИЗМЕНЕНИЙ
 app.get("/history", authMiddleware, adminOnly, (req, res) => {
   try {
     const HISTORY_FILE = path.join(__dirname, "history.json");
