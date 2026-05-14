@@ -43,7 +43,6 @@ let hiddenBg = bg2;
 
 let simulation;
 
-// ЗАГРУЗКА
 fetch("http://localhost:5000/places")
     .then(res => res.json())
     .then(data => {
@@ -96,7 +95,6 @@ function getLayout() {
 
 let currentLayout = getLayout();
 
-// === ПЛАВНОЕ СМЕЩЕНИЕ ГРАФА ===
 function updateSimulationLayout(smooth = true, delay = 0) {
     const target = getLayout();
 
@@ -141,7 +139,7 @@ function updateSimulationLayout(smooth = true, delay = 0) {
 let currentGallery = [];
 let currentImageIndex = 0;
 
-// ГРАФ
+//ГРАФ
 function initGraph(data) {
     if (!data || !Array.isArray(data.nodes) || !Array.isArray(data.edges)) {
         console.error("Invalid graph data:", data);
@@ -185,7 +183,7 @@ function initGraph(data) {
                 const x = d.x;
                 const y = d.y;
 
-                // учитываем подпись
+           
                 const nodeLeft = x - nodeRadius;
                 const nodeRight = x + nodeRadius;
                 const nodeTop = y - nodeRadius - labelHeight;
@@ -241,7 +239,7 @@ function initGraph(data) {
 
     simulation.alphaTarget(0.1).restart();
 
-    // РЁБРА
+    // ребра
     const edges = linkGroup
         .selectAll("line")
         .data(data.edges)
@@ -249,7 +247,7 @@ function initGraph(data) {
         .append("line")
         .attr("stroke", d => {
             if (d.types && d.types.length === 2) {
-                return "url(#edge-gradient)";        // градиент
+                return "url(#edge-gradient)";
             }
             return d.relations?.some(r => r.type === "history") || d.type === "history"
                 ? "#BC461B"
@@ -276,7 +274,7 @@ function initGraph(data) {
         .attr("offset", d => d.offset)
         .attr("stop-color", d => d.color);
 
-    // ВЕРШИНЫ
+    // вершины
     const nodes = nodeGroup
         .selectAll("g")
         .data(data.nodes)
@@ -323,8 +321,6 @@ function initGraph(data) {
         if (d.category.length === 1) {
             return CATEGORY_COLORS[d.category[0]];
         }
-
-        // Обработаем все комбинации двух и трёх категорий
         let colors = [];
 
 
@@ -339,7 +335,6 @@ function initGraph(data) {
         } else if (cats.has("культура") && cats.has("туризм")) {
             colors = ["#521C00", "#496771"];
         } else {
-            // если вдруг другая комбинация
             colors = Array.from(cats).map(c => CATEGORY_COLORS[c]);
         }
 
@@ -355,7 +350,7 @@ function initGraph(data) {
                 .attr("y2", "0%");
         }
 
-        grad.selectAll("stop").remove(); // очистим предыдущие стопы
+        grad.selectAll("stop").remove();
         colors.forEach((color, i) => {
             grad.append("stop")
                 .attr("offset", `${(i / (colors.length - 1)) * 100}%`)
@@ -366,7 +361,7 @@ function initGraph(data) {
         return `url(#${gradId})`;
     }
 
-    // ПОДПИСИ
+    // подписи
     const labels = nodeGroup
         .selectAll("text")
         .data(data.nodes)
@@ -379,7 +374,7 @@ function initGraph(data) {
         .attr("width", "30px")
         .attr("pointer-events", "none");
 
-    // ПОИСК
+    // поиск
     const searchInput = d3.select("#search");
     const clearBtn = d3.select("#clear-search");
 
@@ -394,7 +389,7 @@ function initGraph(data) {
         updateFilters();
     });
 
-    // DROPDOWN ФИЛЬТР
+    //  фильтры
     const filterToggle = document.getElementById("filter-toggle");
     const filterMenu = document.getElementById("filter-menu");
     const filterCheckboxes = filterMenu.querySelectorAll("input");
@@ -507,7 +502,7 @@ function initGraph(data) {
         [activeBg, hiddenBg] = [hiddenBg, activeBg];
     }
 
-    // ФИЛЬТРАЦИЯ
+    // фильтрация
     function isNodeActive(node, query) {
 
         const keywords = Array.isArray(node.keywords)
@@ -658,7 +653,7 @@ function initGraph(data) {
             .attr("y", d => d.y);
     });
 
-    // КЛИК ПО ВЕРШИНЕ
+    // клик по фону
     function nodeClicked(event, node) {
         activeNode = node;
         updateNodeTransform();
@@ -698,7 +693,7 @@ function initGraph(data) {
           </div>
         </div>
       `);
-        // Плавное появление панели + задержка движения графа
+      
         setTimeout(() => {
             infoPanel.transition()
                 .duration(400)
@@ -707,7 +702,7 @@ function initGraph(data) {
         }, 50);
         initTabs();
 
-        // timeline click
+        // таймлайн
         document.querySelectorAll(".timeline-preview")
             .forEach(img => {
                 img.onclick = (e) => {
@@ -733,7 +728,7 @@ function initGraph(data) {
             };
         });
 
-        // аккордеон причины связи
+        // аккордеон
         document.querySelectorAll(".accordion-toggle").forEach(btn => {
 
             btn.onclick = (e) => {
@@ -749,8 +744,6 @@ function initGraph(data) {
                     .forEach(acc => {
                         acc.classList.remove("open");
                     });
-
-                // если текущий был закрыт → открыть
                 if (!isOpen) {
                     currentAccordion.classList.add("open");
                 }
@@ -868,12 +861,9 @@ function initGraph(data) {
                 .attr("fill", getNodeFill(d, svg));
         });
     }
-
-    // КЛИК ПО ФОНУ
     svg.on("click", () => {
         if (!activeNode) return;
 
-        // Плавное скрытие панели
         infoPanel.transition()
             .duration(350)
             .style("opacity", 0)
@@ -885,20 +875,16 @@ function initGraph(data) {
         updateNodeTransform();
         updateFilters();
 
-        // Плавное "расползание" вершин после закрытия панели
         setTimeout(() => {
-            updateSimulationLayout(true, 70);   // небольшая задержка
-            simulation.alphaTarget(0.05).restart(); // чуть сильнее, чтобы заметно разъехались
+            updateSimulationLayout(true, 70);
+            simulation.alphaTarget(0.05).restart();
         }, 180);
     });
-
-    // ОПИСАНИЕ
     function formatDescription(text) {
         if (!text) return "";
         return `<p class="info-text">${text}</p>`;
     }
 
-    // СВЯЗАННЫЕ ВЕРШИНЫ
     function renderRelated(node) {
 
         const related = data.edges
@@ -980,7 +966,7 @@ function initGraph(data) {
     </div>`;
     }
 
-    // ТАБЫ
+    // табы
     function initTabs() {
         const tabs = document.querySelectorAll(".tab");
         const panes = document.querySelectorAll(".tab-pane");
@@ -995,9 +981,7 @@ function initGraph(data) {
         });
     }
 
-    // СМЕЩЕНИЕ ГРАФА
-
-    // DRAG
+    // drag
     function dragStarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = Math.max(margin, Math.min(window.innerWidth - margin, d.x));
@@ -1021,7 +1005,7 @@ function initGraph(data) {
     bg1.classList.add("active");
 }
 
-// RESIZE
+// resize
 window.addEventListener("resize", () => {
 
     svg
