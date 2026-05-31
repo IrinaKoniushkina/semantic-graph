@@ -34,23 +34,47 @@ const { authMiddleware, adminOnly } = require('./middleware/auth');
 const { logAction } = require('./history');
 const upload = multer({ storage: multer.memoryStorage() })
 
-const USERS_FILE = path.join(__dirname, "users.json");
-
 app.use(cors())
 app.use(express.json())
 
+<<<<<<< HEAD
 //логин
 app.post("/login", (req, res) => {
   console.log(req.body);
   const { login: username, password } = req.body;
   const result = login(username, password);
+=======
+const auth = require('./auth');
+console.log(auth);
 
-  if (!result) {
-    return res.status(401).json({ error: "Неверный логин или пароль" });
+// ====================== LOGIN ======================
+app.post("/login", async (req, res) => {
+  try {
+    const { login: username, password } = req.body || {};
+>>>>>>> cbaa843 (update authtorization)
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: "No credentials"
+      });
+    }
+
+    const result = await login(username, password);
+
+    if (!result) {
+      return res.status(401).json({
+        error: "Неверный логин или пароль"
+      });
+    }
+
+    res.json(result);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Сервер не отвечает"
+    });
   }
-
-  console.log("Успешный вход:", username);
-  res.json(result);
 });
 
 // ПОЛУЧИТЬ ГРАФ
@@ -166,7 +190,7 @@ app.post("/places", authMiddleware, async (req, res) => {
         `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
         { id: node.id }
       );
-      logAction(
+      await logAction(
         req.user.login,
         isEdit ? "EDIT_NODE" : "CREATE_NODE",
         node.id
@@ -253,7 +277,7 @@ app.post("/places", authMiddleware, async (req, res) => {
         );
       }
     }
-    logAction(
+    await logAction(
       req.user.login,
       isEdit ? "EDIT_NODE" : "CREATE_NODE",
       node.id
@@ -307,7 +331,7 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
       `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
     );
-    logAction(req.user.login, "DELETE_NODE", id);
+    await logAction(req.user.login, "DELETE_NODE", id);
     res.json({ success: true });
 
   } catch (err) {
@@ -360,49 +384,273 @@ app.post("/upload-images", authMiddleware, (req, res) => {
   });
 });
 
+<<<<<<< HEAD
 app.get("/users", authMiddleware, adminOnly, (req, res) => {
   try {
     if (!fs.existsSync(USERS_FILE)) {
       return res.json([]);
+=======
+function loadUsers() {
+  if (!fs.existsSync(USERS_FILE)) return [];
+  const raw = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+  return Array.isArray(raw) ? raw : (raw.users || []);
+}
+function saveUsers(users) {
+  fs.writeFileSync(
+    USERS_FILE,
+    JSON.stringify({ users }, null, 2)
+  );
+}
+
+// ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+app.get(
+  "/users",
+  authMiddleware,
+  adminOnly,
+
+  async (req, res) => {
+
+    const session =
+      driver.session();
+
+    try {
+
+      const result =
+        await session.run(`
+                MATCH (u:User)
+                RETURN u
+                ORDER BY u.login
+            `);
+
+      const users =
+        result.records.map(r => {
+
+          const u =
+            r.get("u").properties;
+
+          return {
+            id: u.id,
+            login: u.login,
+            role: u.role
+          };
+        });
+
+      res.json(users);
+
+>>>>>>> cbaa843 (update authtorization)
     }
 
-    const data = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+    catch (err) {
 
-    const users = Array.isArray(data)
-      ? data
-      : (data.users || []);
+      console.error(err);
 
+<<<<<<< HEAD
     const safeUsers = users.map(user => ({
       id: user.id,
       login: user.login,
       role: user.role
     }));
+=======
+      res.status(500).json({
+        error: "Ошибка получения пользователей"
+      });
+    }
+>>>>>>> cbaa843 (update authtorization)
 
-    res.json(safeUsers);
+    finally {
+      await session.close();
+    }
+  });
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка получения пользователей" });
-  }
-});
+//ДОБАВИТЬ ПОЛЬЗОВАТЕЛЕЙ
+app.post(
+  "/users",
+  authMiddleware,
+  adminOnly,
 
+  async (req, res) => {
+
+    const {
+      login,
+      password,
+      role
+    } = req.body;
+
+    const session =
+      driver.session();
+
+    try {
+
+      const existing =
+        await session.run(
+          `
+                MATCH (u:User {
+                    login:$login
+                })
+
+                RETURN u
+                `,
+          { login }
+        );
+
+      if (existing.records.length) {
+
+        return res.status(400).json({
+          error: "Логин занят"
+        });
+      }
+
+      const user = {
+        id: Date.now().toString(),
+        login,
+        password,
+        role: role || "editor"
+      };
+
+      await session.run(
+        `
+            CREATE (u:User)
+
+            SET u=$user
+            `,
+        { user }
+      );
+
+      res.json({
+        success: true,
+        user
+      });
+
+    }
+
+    finally {
+      await session.close();
+    }
+  });
+
+app.patch(
+  "/users/:id/role",
+  authMiddleware,
+  adminOnly,
+
+  async (req, res) => {
+
+    const session =
+      driver.session();
+
+    try {
+
+      await session.run(
+        `
+            MATCH (u:User {id:$id})
+
+            SET u.role=$role
+            `,
+        {
+          id: req.params.id,
+          role: req.body.role
+        }
+      );
+
+      res.json({
+        success: true
+      });
+
+    }
+
+    finally {
+      await session.close();
+    }
+  });
+
+//УДАЛИТЬ ПОЛЬЗОВАТЕЛЯ
+app.delete(
+  "/users/:id",
+  authMiddleware,
+  adminOnly,
+
+  async (req, res) => {
+
+    const session =
+      driver.session();
+
+    try {
+
+      await session.run(
+        `
+            MATCH (u:User {id:$id})
+
+            DELETE u
+            `,
+        {
+          id: req.params.id
+        }
+      );
+
+      res.json({
+        success: true
+      });
+
+    }
+
+    finally {
+      await session.close();
+    }
+  });
+
+<<<<<<< HEAD
 app.get("/history", authMiddleware, adminOnly, (req, res) => {
   try {
     const HISTORY_FILE = path.join(__dirname, "history.json");
+=======
+// ПОЛУЧИТЬ ИСТОРИЮ ИЗМЕНЕНИЙ
+app.get(
+  "/history",
+  authMiddleware,
+  adminOnly,
 
-    if (!fs.existsSync(HISTORY_FILE)) {
-      return res.json([]);
+  async (req, res) => {
+
+    const session =
+      driver.session();
+
+    try {
+
+      const result =
+        await session.run(
+          `
+                MATCH (h:History)
+
+                RETURN h
+
+                ORDER BY h.date DESC
+                `
+        );
+
+      const history =
+        result.records.map(r =>
+          r.get("h").properties
+        );
+
+      res.json(history);
+>>>>>>> cbaa843 (update authtorization)
+
     }
 
-    const history = JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
+    catch (err) {
 
-    res.json(history);
+      console.error(err);
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка получения истории" });
-  }
-});
+      res.status(500).json({
+        error:
+          "Ошибка получения истории"
+      });
+    }
+
+    finally {
+      await session.close();
+    }
+  });
 
 
 

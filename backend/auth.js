@@ -1,51 +1,80 @@
-// backend/auth.js
-const fs = require('fs');
-const path = require('path');
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
+const neo4j = require("neo4j-driver");
 
-const USERS_FILE = path.join(__dirname, "users.json");
-const SECRET = "super-secret-key-2026";   // можно потом в .env
+const driver = neo4j.driver(
+  "bolt://127.0.0.1:7687",
+  neo4j.auth.basic("neo4j", "57281292")
+);
 
-function readUsers() {
-  if (!fs.existsSync(USERS_FILE)) {
-    return { users: [] };
-  }
-  return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
-}
+const SECRET = "super-secret-key-2026";
 
-function writeUsers(data) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2));
-}
+async function login(login, password) {
 
-function login(login, password) {
-  const data = readUsers();
-  const user = data.users.find(u => u.login === login && u.password === password);
-  
-  if (!user) return null;
+  const session = driver.session();
 
-  const token = jwt.sign(
-    { id: user.id, login: user.login, role: user.role },
-    SECRET,
-    { expiresIn: '24h' }
-  );
+  try {
 
-  return {
-    token,
-    user: {
-      id: user.id,
-      login: user.login,
-      role: user.role,
-      fullName: user.fullName || user.login
+    const result = await session.run(
+      `
+            MATCH (u:User {
+                login:$login,
+                password:$password
+            })
+
+            RETURN u
+            `,
+      { login, password }
+    );
+
+    if (!result.records.length) {
+      return null;
     }
-  };
+
+    const user =
+      result.records[0]
+        .get("u")
+        .properties;
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        login: user.login,
+        role: user.role
+      },
+      SECRET,
+      { expiresIn: "24h" }
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        login: user.login,
+        role: user.role,
+        fullName:
+          user.fullName ||
+          user.login
+      }
+    };
+
+  } finally {
+
+    await session.close();
+  }
 }
 
 function verifyToken(token) {
+
   try {
     return jwt.verify(token, SECRET);
-  } catch (err) {
+  }
+
+  catch {
     return null;
   }
 }
 
-module.exports = { login, readUsers, writeUsers, verifyToken };
+module.exports = {
+  login,
+  verifyToken
+};

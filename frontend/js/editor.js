@@ -1,4 +1,4 @@
-
+let currentUserRole = "editor";
 const token = localStorage.getItem("token");
 
 if (!token) {
@@ -63,6 +63,7 @@ const MAX_IMAGES = 5;
 const MIN_IMAGE_CAPTION = 3;
 let existingImages = [];
 let newImages = [];
+let draggedIndex = null;
 let currentEditingImage = null;
 let currentEditingIndex = -1;
 let currentEditingCollection = null;
@@ -166,23 +167,23 @@ const resetYes = document.getElementById("resetYes");
 const resetNo = document.getElementById("resetNo");
 const resetModalClose = document.getElementById("resetModalClose");
 
+<<<<<<< HEAD
 // загрузка данных
+=======
+//загрузка данных
+>>>>>>> cbaa843 (update authtorization)
 async function fetchGraphData() {
     try {
         const token = localStorage.getItem("token");
-
         const response = await fetch("http://localhost:5000/places", {
             headers: {
                 Authorization: `Bearer ${token}`
             }
         });
-
         if (!response.ok) {
             throw new Error("Ошибка загрузки графа");
         }
-
         const data = await response.json();
-
         allNodes = data.nodes || [];
         allEdges = data.edges || [];
 
@@ -199,8 +200,55 @@ function getSelectedRelationType() {
     return selected?.value === "history-relation" ? "history" : "geo";
 }
 
-function isStep1Valid() {
+// шаги
+let currentStep = 1;
+const stepBlocks = document.querySelectorAll(".form-step");
+const stepIndicators = document.querySelectorAll(".step");
 
+function updateStepsUI() {
+    stepBlocks.forEach(block => {
+        block.classList.toggle(
+            "active",
+            Number(block.dataset.step) === currentStep
+        );
+    });
+    stepIndicators.forEach(step => {
+        const stepNum =
+            Number(step.dataset.step);
+        step.classList.remove(
+            "active",
+            "completed"
+        );
+        if (stepNum === currentStep) {
+            step.classList.add("active");
+        }
+        if (stepNum < currentStep) {
+            step.classList.add("completed");
+        }
+    });
+}
+
+document.querySelectorAll(".next-step")
+    .forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (currentStep < 3) {
+                currentStep++;
+                updateStepsUI();
+            }
+        });
+    });
+
+document.querySelectorAll(".prev-step")
+    .forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepsUI();
+            }
+        });
+    });
+
+function isStep1Valid() {
     return (
         nameInput.value.trim().length >= limits.name.min &&
         selectedCategories.length > 0 &&
@@ -211,37 +259,40 @@ function isStep1Valid() {
 function isStep2Valid() {
     const hasRelations = selectedRelations.length > 0;
     const allImages = [...existingImages, ...newImages];
-    const hasImages = allImages.length > 0;
-
     const allCaptionsValid = allImages.every(img =>
         typeof img.caption === "string" &&
         img.caption.trim().length >= MIN_IMAGE_CAPTION
     );
-
     return (
         hasRelations &&
-        hasImages &&
         allCaptionsValid
     );
 }
 
 function isStep3Valid() {
-
+    const descLen = getTextLength(descInput);
+    const historyLen = getTextLength(historyInput);
+    const modernLen = getTextLength(modernInput);
+    const keywordsLen = keywordsInput.value.trim().length;
     return (
-        keywordsInput.value.trim().length >= limits.keywords.min &&
-        getTextLength(descInput) >= limits.desc.min &&
-        getTextLength(historyInput) >= limits.history.min &&
-        getTextLength(modernInput) >= limits.modern.min
+        keywordsLen >= limits.keywords.min &&
+        keywordsLen <= limits.keywords.max &&
+
+        descLen >= limits.desc.min &&
+        descLen <= limits.desc.max &&
+
+        historyLen >= limits.history.min &&
+        historyLen <= limits.history.max &&
+
+        modernLen >= limits.modern.min &&
+        modernLen <= limits.modern.max
     );
 }
 
 function validateImageModal() {
-
     const hasCaption =
         imageCaptionInput.value.trim().length >= MIN_IMAGE_CAPTION;
-
     addUrlBtn.disabled = !hasCaption;
-
     addUrlBtn.classList.toggle(
         "disabled-btn",
         !hasCaption
@@ -289,45 +340,83 @@ function updateDisabledStyles() {
     });
 }
 
+//счетчики
 function updateCounter(input, counter, max) {
     const length = getTextLength(input);
-
     counter.textContent = `${length}/${max}`;
-    counter.style.color = length > max ? "red" : "#888";
+    if (length > max) {
+        counter.style.color = "red";
+    } else {
+        counter.style.color = "#888";
+    }
 }
 
 function getTextLength(input) {
-
     if (
         input.tagName === "INPUT" ||
         input.tagName === "TEXTAREA"
     ) {
-        return input.value.length;
+        return input.value.trim().length;
     }
-
-    return input.innerText.length;
+    return input.innerText
+        .replace(/\n/g, "")
+        .trim()
+        .length;
 }
+
 function bindCounter(input, counter, limit) {
     if (!input || !counter) return;
-
     const handler = () => {
         const length = getTextLength(input);
-
-        // ограничение
-        if (length > limit.max) {
-            if (input.value !== undefined) {
-                input.value = input.value.slice(0, limit.max);
-            } else {
-                input.innerText = input.innerText.slice(0, limit.max);
-            }
-        }
-
         updateCounter(input, counter, limit.max);
+        if (length > limit.max) {
+            counter.style.color = "red";
+        } else {
+            counter.style.color = "#888";
+        }
     };
-
     input.addEventListener("input", handler);
-
     handler();
+}
+
+function limitEditorLength(editor, max) {
+    editor.addEventListener("beforeinput", (e) => {
+        const text = getTextLength(editor);
+        const isDelete =
+            e.inputType?.startsWith("delete");
+        if (text >= max && !isDelete) {
+            e.preventDefault();
+        }
+    });
+}
+
+function refreshAllCounters() {
+    updateCounter(nameInput, document.querySelector("#name-counter"), limits.name.max);
+    updateCounter(
+        keywordsInput,
+        document.querySelector("#keywords-counter"),
+        limits.keywords.max
+    );
+    updateCounter(
+        descInput,
+        document.querySelector("#desc-counter"),
+        limits.desc.max
+    );
+    updateCounter(
+        historyInput,
+        document.querySelector("#history-counter"),
+        limits.history.max
+    );
+    updateCounter(
+        modernInput,
+        document.querySelector("#modern-counter"),
+        limits.modern.max
+    );
+    updateCounter(
+        relationReasonInput,
+        relationReasonCounter,
+        150
+    );
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -337,62 +426,83 @@ document.addEventListener("DOMContentLoaded", () => {
     bindCounter(historyInput, document.querySelector("#history-counter"), limits.history);
     bindCounter(modernInput, document.querySelector("#modern-counter"), limits.modern);
 });
-[
-    nameInput,
-    geoInput,
-    keywordsInput,
-    relationReasonInput
-].forEach(el => {
-
-    el.addEventListener("input", updateWizardButtons);
+limitEditorLength(descInput, limits.desc.max);
+limitEditorLength(historyInput, limits.history.max);
+limitEditorLength(modernInput, limits.modern.max);
+[nameInput, geoInput, keywordsInput, relationReasonInput].forEach(el => {
+    el.addEventListener("input", () => {
+        refreshAllCounters();
+        updateWizardButtons();
+    });
 });
-
 [descInput, historyInput, modernInput]
     .forEach(el => {
-
-        el.addEventListener("input", updateWizardButtons);
+        el.addEventListener("input", () => {
+            refreshAllCounters();
+            updateWizardButtons();
+        });
     });
 
 document.querySelectorAll('.editor').forEach(editor => {
     editor.addEventListener('paste', function (e) {
         e.preventDefault();
-
-        let text = (e.clipboardData || window.clipboardData).getData('text');
-
-        text = text
-            .replace(/\r/g, '')
-            .replace(/\n{2,}/g, '\n') // схлопнули лишние
-            .trim();
-
-        // превращаем строки в <p>
-        const paragraphs = text.split('\n')
-            .map(line => `<p>${line.trim()}</p>`)
-            .join('');
-
-        document.execCommand('insertHTML', false, paragraphs);
+        let text =
+            (e.clipboardData || window.clipboardData)
+                .getData('text');
+        text = text.replace(/\r/g, '');
+        const lines = text.split('\n');
+        let html = "";
+        let inUL = false;
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) {
+                if (inUL) {
+                    html += "</ul>";
+                    inUL = false;
+                }
+                return;
+            }
+            if (
+                trimmed.startsWith("- ") ||
+                trimmed.startsWith("• ")
+            ) {
+                if (!inUL) {
+                    html += "<ul>";
+                    inUL = true;
+                }
+                html += `<li>${trimmed.replace(/^[-•]\s*/, '')
+                    }</li>`;
+            } else {
+                if (inUL) {
+                    html += "</ul>";
+                    inUL = false;
+                }
+                html += `<p>${trimmed}</p>`;
+            }
+        });
+        if (inUL) { html += "</ul>"; }
+        document.execCommand('insertHTML', false, html);
     });
 });
-
 imageCreditsToggle.addEventListener("change", () => {
-
     imageCreditsFields.style.display =
         imageCreditsToggle.checked
             ? "flex"
             : "none";
 });
 
+<<<<<<< HEAD
 // загрузка изображений
+=======
+//загрузка изображений
+>>>>>>> cbaa843 (update authtorization)
 async function uploadImages() {
     if (newImages.length === 0) return [];
-
     const formData = new FormData();
-
     for (let item of newImages) {
         formData.append("images", item.file);
     }
-
     const token = localStorage.getItem("token");
-
     const res = await fetch("http://localhost:5000/upload-images", {
         method: "POST",
         headers: {
@@ -400,9 +510,7 @@ async function uploadImages() {
         },
         body: formData
     });
-
     const text = await res.text();
-
     try {
         const data = JSON.parse(text);
         return data.images || [];
@@ -412,7 +520,11 @@ async function uploadImages() {
         return [];
     }
 }
+<<<<<<< HEAD
 // иконки
+=======
+//иконки
+>>>>>>> cbaa843 (update authtorization)
 iconPicker.querySelectorAll("svg").forEach(svg => {
     svg.addEventListener("click", () => {
         selectedIcon = svg.dataset.icon;
@@ -423,7 +535,11 @@ iconPicker.querySelectorAll("svg").forEach(svg => {
         svg.classList.add("active");
         updateWizardButtons();
     });
+<<<<<<< HEAD
     // тултипы
+=======
+    //тултипы
+>>>>>>> cbaa843 (update authtorization)
     svg.onmouseenter = (e) => {
         const text = iconDescriptions[svg.dataset.icon] || "";
 
@@ -464,7 +580,11 @@ btnAdd.addEventListener("click", () => {
     document.getElementById("save-btn").textContent = "Добавить вершину в граф"
 });
 
+<<<<<<< HEAD
 //удаление вершины
+=======
+//удалние вершины
+>>>>>>> cbaa843 (update authtorization)
 deleteBtn.addEventListener("click", () => {
     if (!editingNode) return
     modal.style.display = "flex"
@@ -505,69 +625,70 @@ nameInput.addEventListener("input", () => {
     showNameDropdown(nameInput.value);
 });
 
+<<<<<<< HEAD
 //автозаполнение
+=======
+//автозополнение
+>>>>>>> cbaa843 (update authtorization)
 function showNameDropdown(filter = "") {
-
     nameDropdown.innerHTML = "";
+<<<<<<< HEAD
 
+=======
+>>>>>>> cbaa843 (update authtorization)
     if (mode === "add" && !filter.trim()) {
         nameDropdown.style.display = "none";
         return;
     }
-
     const results = allNodes.filter(n =>
         n.name.toLowerCase().includes(filter.toLowerCase())
+    ).sort((a, b) =>
+        a.name.localeCompare(b.name, "ru", { sensitivity: "base" })
     );
+<<<<<<< HEAD
 
    
+=======
+>>>>>>> cbaa843 (update authtorization)
     if (mode === "add" && results.length === 0) {
         nameDropdown.style.display = "none";
         return;
     }
-
     results.forEach(n => {
         const div = document.createElement("div");
         div.textContent = n.name;
-
         div.addEventListener("click", () => {
+<<<<<<< HEAD
             
+=======
+>>>>>>> cbaa843 (update authtorization)
             if (mode === "add") {
                 mode = "edit";
-
                 btnEdit.style.display = "none";
                 btnAdd.style.display = "inline-block";
                 deleteBtn.style.display = "inline-block";
-
                 title.textContent = "Редактировать вершину";
                 document.getElementById("save-btn").textContent = "Сохранить";
             }
-
             selectNode(n);
         });
-
         nameDropdown.appendChild(div);
     });
-
-    // если edit и пусто → "Ничего не найдено"
     if (mode === "edit" && results.length === 0) {
         const empty = document.createElement("div");
         empty.textContent = "Ничего не найдено";
         empty.style.color = "#999";
         nameDropdown.appendChild(empty);
     }
-
     nameDropdown.style.display = "block";
 }
 
 function selectNode(node) {
     editingNode = node
-    nameInput.value = node.name
-    selectedCategories = node.category || [];
-    selectedCategoriesDiv.innerHTML = "";
-
     keywordsInput.value = node.keywords || "";
-    keywordsCounter.textContent =
-        `${keywordsInput.value.length} / ${limits.keywords.max}`
+    nameInput.value = node.name
+    selectedCategories = [...(node.category || [])];
+    selectedCategoriesDiv.innerHTML = "";
 
     selectedCategories.forEach(cat => {
         const tag = document.createElement("span");
@@ -575,13 +696,19 @@ function selectNode(node) {
         tag.style.background = CATEGORY_COLORS[cat] || "#777";
         tag.style.color = "white";
         tag.textContent = cat + " ✕";
-
         tag.addEventListener("click", () => {
-            selectedRelations =
-                selectedRelations.filter(r =>
-                    !(r.id === node.id && r.type === type)
+            selectedCategories =
+                selectedCategories.filter(
+                    c => c !== cat
                 );
             tag.remove();
+            if (
+                document.activeElement ===
+                categorySearch
+            ) {
+                showAllCategories();
+            }
+            updateWizardButtons();
         });
 
         selectedCategoriesDiv.appendChild(tag);
@@ -616,10 +743,13 @@ function selectNode(node) {
         const relatedNode = allNodes.find(n => n.id === relatedId);
 
         if (relatedNode) {
+<<<<<<< HEAD
         
+=======
+>>>>>>> cbaa843 (update authtorization)
             if (edge.relations) {
                 edge.relations.forEach(rel => {
-                    addRelation(relatedNode, rel.type, rel.reason);
+                    addRelation(relatedNode, rel.type, rel.reason, false);
                 });
             }
         }
@@ -628,6 +758,8 @@ function selectNode(node) {
     validateStep1();
     updateWizardButtons();
     updateDisabledStyles();
+    refreshAllCounters();
+    renderRelations();
 }
 
 document.querySelectorAll(".editor-toolbar button").forEach(btn => {
@@ -674,10 +806,15 @@ function addCategory(cat) {
     updateWizardButtons();
     const tag = document.createElement("span");
     tag.className = "tag";
+    tag.style.background = CATEGORY_COLORS[cat] || "#777";
+    tag.style.color = "white";
     tag.textContent = cat + " ✕";
     tag.addEventListener("click", () => {
         selectedCategories = selectedCategories.filter(c => c !== cat);
         tag.remove();
+        if (document.activeElement === categorySearch) {
+            showAllCategories();
+        }
         updateWizardButtons();
     });
     selectedCategoriesDiv.appendChild(tag);
@@ -685,13 +822,18 @@ function addCategory(cat) {
     categoryDropdown.style.display = "none";
 }
 
+<<<<<<< HEAD
+=======
+// dropdown
+>>>>>>> cbaa843 (update authtorization)
 relationSearch.addEventListener("focus", showAllRelation);
 relationSearch.addEventListener("click", showAllRelation);
 relationSearch.addEventListener("input", showAllRelation);
 
 function showAllRelation() {
-    const q = relationSearch.value.toLowerCase();
+    const q = relationSearch.value.toLowerCase().trim();
     relationDropdown.innerHTML = "";
+<<<<<<< HEAD
 
     const currentType = getSelectedRelationType();   // "geo" или "history"
 
@@ -701,27 +843,46 @@ function showAllRelation() {
        
         const alreadyHasThisType = selectedRelations.some(r =>
             r.id === n.id && r.type === currentType
+=======
+    const currentType = getSelectedRelationType();
+    const results = allNodes
+        .filter(n => {
+            if (n.id === editingNode?.id) return false;
+            const alreadyHasThisType =
+                selectedRelations.some(r =>
+                    r.id === n.id &&
+                    r.type === currentType
+                );
+            if (alreadyHasThisType) return false;
+            const nameMatch = n.name?.toLowerCase().includes(q);
+            const keywords = (n.keywords || "")
+                .toLowerCase()
+                .split(/[\s,]+/)
+                .filter(Boolean);
+            const keywordsMatch = keywords.some(k => k.includes(q));
+            return nameMatch || keywordsMatch;
+        })
+        .sort((a, b) =>
+            a.name.localeCompare(b.name, "ru", { sensitivity: "base" })
+>>>>>>> cbaa843 (update authtorization)
         );
-
-        return !alreadyHasThisType &&
-            n.name.toLowerCase().includes(q);
-    });
-
     results.forEach(n => {
         const div = document.createElement("div");
+        const kw = (n.keywords || "").split(",")[0];
         div.textContent = n.name;
         div.onclick = () => addRelation(n);
         relationDropdown.appendChild(div);
     });
-
     relationDropdown.style.display = "block";
 }
 
+<<<<<<< HEAD
 function addRelation(node, forcedType = null, forcedReason = "") {
+=======
+function addRelation(node, forcedType = null, forcedReason = "", autoOpen = true) {
+>>>>>>> cbaa843 (update authtorization)
     const type = forcedType || getSelectedRelationType();
-    // Запрет самопетли
     if (node.id === editingNode?.id) {
-        showToast("Нельзя добавить связь объекта с самим собой");
         return;
     }
     const alreadyExists = selectedRelations.some(r =>
@@ -738,10 +899,40 @@ function addRelation(node, forcedType = null, forcedReason = "") {
     };
 
     selectedRelations.push(relation);
+    relationSearch.value = "";
+    relationDropdown.style.display = "none";
+    const tags = renderRelations();
+    const tag = tags.get(relation);
+    if (tag) {
+        tag.classList.add(
+            "just-added"
+        );
+        setTimeout(() => {
+            tag.classList.remove(
+                "just-added"
+            );
+        }, 3000);
+    }
+    if (type === "history" && autoOpen) {
+        openRelationReasonEditor(
+            relation,
+            tag,
+            true
+        );
+    }
+    updateWizardButtons();
+}
 
+<<<<<<< HEAD
     // отображение тега
+=======
+function createRelationTag(node, relation) {
+>>>>>>> cbaa843 (update authtorization)
     const tag = document.createElement("div");
-    const color = type === "geo" ? "#1C9284" : "#BC461B";
+    const color =
+        relation.type === "geo"
+            ? "#1C9284"
+            : "#BC461B";
     tag.className = "tag";
     tag.style.background = color;
     tag.style.color = "white";
@@ -754,64 +945,63 @@ function addRelation(node, forcedType = null, forcedReason = "") {
     tag.appendChild(text);
     tag.appendChild(removeBtn);
     text.addEventListener("click", () => {
-        if (type === "history") {
-            openRelationReasonEditor(
-                relation,
-                tag,
-                false);
+        if (relation.type === "history") {
+            openRelationReasonEditor(relation, tag, false);
         }
     });
     removeBtn.onclick = (e) => {
         e.stopPropagation();
-        askDeleteRelation(
-            relation,
-            tag);
+        askDeleteRelation(relation, tag);
     };
     selectedRelationsDiv.appendChild(tag);
-    relationSearch.value = "";
-    relationDropdown.style.display = "none";
-    if (type === "history") {
-        openRelationReasonEditor(
-            relation,
-            tag,
-            true
-        );
-    }
-    updateWizardButtons();
+    return tag;
+}
+
+function renderRelations() {
+    selectedRelationsDiv.innerHTML = "";
+    let createdTags = new Map();
+    selectedRelations
+        .sort((a, b) => {
+            const nodeA = allNodes.find(n => n.id === a.id);
+            const nodeB = allNodes.find(n => n.id === b.id);
+            return (
+                nodeA?.name || ""
+            ).localeCompare(nodeB?.name || "", "ru",
+                { sensitivity: "base" }
+            );
+        })
+        .forEach(relation => {
+            const node =
+                allNodes.find(n => n.id === relation.id);
+            if (node) {
+                const tag = createRelationTag(node, relation);
+                createdTags.set(relation, tag);
+            }
+        });
+    return createdTags;
 }
 
 function openRelationReasonEditor(relation, tag, newRelation = false) {
-
     currentRelationEditing = relation;
     currentRelationTag = tag;
     isNewRelation = newRelation;
-
     relationReasonEditor.classList.remove("hidden");
-
     relationReasonInput.value =
         relation.reason || "";
-
     relationReasonCounter.textContent =
         `${relationReasonInput.value.length}/150`;
-
     document.querySelectorAll(".tag")
         .forEach(t => t.classList.remove("editing"));
-
     tag.classList.add("editing");
 }
 
 function closeRelationReasonEditor() {
-
     relationReasonEditor.classList.add("hidden");
-
     relationReasonInput.value = "";
-
     currentRelationEditing = null;
-
     if (currentRelationTag) {
         currentRelationTag.classList.remove("editing");
     }
-
     currentRelationTag = null;
     isNewRelation = false;
 }
@@ -823,7 +1013,7 @@ function askDeleteRelation(relation, tag) {
 
 function removeRelation(relation, tag) {
     selectedRelations = selectedRelations.filter(r => r !== relation);
-    if (tag) { tag.remove(); }
+    renderRelations();
     if (currentRelationEditing === relation) {
         closeRelationReasonEditor();
     }
@@ -872,10 +1062,16 @@ saveRelationReasonBtn.addEventListener("click", () => {
 });
 
 cancelRelationReasonBtn.addEventListener("click", () => {
-    // если новая связь → удаляем её
-    if (isNewRelation && currentRelationEditing) {
+    if (
+        isNewRelation &&
+        currentRelationEditing &&
+        (!currentRelationEditing.reason ||
+            currentRelationEditing.reason.trim().length === 0)
+    ) {
         selectedRelations =
-            selectedRelations.filter(r => r !== currentRelationEditing);
+            selectedRelations.filter(
+                r => r !== currentRelationEditing
+            );
         if (currentRelationTag) {
             currentRelationTag.remove();
         }
@@ -942,14 +1138,52 @@ function renderPreview() {
     preview.innerHTML = "";
 
     const all = [
-        ...existingImages,
-        ...newImages
+        ...existingImages.map(i => ({ ...i, _collection: "existing" })),
+        ...newImages.map(i => ({ ...i, _collection: "new" }))
     ];
 
-    all.forEach((item) => {
+    all.forEach((item, index) => {
 
         const wrapper = document.createElement("div");
         wrapper.className = "preview-item";
+        wrapper.draggable = true;
+        wrapper.dataset.index = index;
+
+        wrapper.addEventListener("dragstart", () => {
+            draggedIndex = index;
+            wrapper.classList.add("dragging");
+        });
+
+        wrapper.addEventListener("dragend", () => {
+            draggedIndex = null;
+            wrapper.classList.remove("dragging");
+        });
+
+        wrapper.addEventListener("dragover", (e) => {
+            e.preventDefault();
+        });
+
+        wrapper.addEventListener("drop", (e) => {
+            e.preventDefault();
+
+            if (draggedIndex === null || draggedIndex === index) return;
+
+            const moved = all[draggedIndex];
+
+            all.splice(draggedIndex, 1);
+            all.splice(index, 0, moved);
+
+            // пересобираем обратно в 2 массива
+            existingImages = all
+                .filter(i => i._collection === "existing")
+                .map(({ _collection, ...rest }) => rest);
+
+            newImages = all
+                .filter(i => i._collection === "new")
+                .map(({ _collection, ...rest }) => rest);
+
+            renderPreview();
+        });
 
         const imageWrapper = document.createElement("div");
         imageWrapper.style.position = "relative";
@@ -1278,21 +1512,27 @@ const nameCounter = document.getElementById("name-counter");
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault()
-
+    if (!isStep3Valid()) {
+        showToast("Превышен лимит символов или не заполнены обязательные поля");
+        return;
+    }
     if (!nameInput.value.trim()) {
         showToast("Введите название");
         return;
     }
-
+    if (
+        nameInput.value.trim().length > limits.name.max ||
+        keywordsInput.value.trim().length > limits.keywords.max
+    ) {
+        showToast("Превышено максимальное количество символов");
+        return;
+    }
     const totalImages = existingImages.length + newImages.length;
-
     if (totalImages > MAX_IMAGES) {
         showToast("Максимум 5 изображений");
         return;
     }
-
     const uploaded = await uploadImages();
-
     const newImageObjects = uploaded.map((src, i) => ({
         src,
         caption: newImages[i]?.caption ?? "",
@@ -1419,8 +1659,7 @@ function clearForm() {
 
     title.textContent = "Добавить вершину";
 
-    document.getElementById("save-btn").textContent =
-        "Добавить вершину";
+    document.getElementById("save-btn").textContent = "Добавить вершину";
 
     currentStep = 1;
     updateStepsUI();
@@ -1428,6 +1667,7 @@ function clearForm() {
     updateUploadVisibility();
     updateWizardButtons();
     updateDisabledStyles();
+    refreshAllCounters();
 }
 
 resetNo.addEventListener("click", () => {
@@ -1478,6 +1718,7 @@ document.querySelectorAll(".editor-tabs .tab").forEach(tab => {
     });
 });
 
+<<<<<<< HEAD
 
 
 let currentStep = 1;
@@ -1543,24 +1784,70 @@ document.querySelectorAll(".prev-step")
     });
 
 
+=======
+// админ-панель
+>>>>>>> cbaa843 (update authtorization)
 let currentTab = "editor";
-
-async function initAdminInterface() {
+function initUserRole() {
     const userStr = localStorage.getItem("user");
     if (!userStr) return;
-
-    const user = JSON.parse(userStr);
-
-    if (user.role === "admin") {
-        document.getElementById("tab-users").style.display = "inline-flex";
-        document.getElementById("tab-history").style.display = "inline-flex";
+    try {
+        const user = JSON.parse(userStr);
+        currentUserRole = user.role || "editor";
+    } catch (e) {
+        currentUserRole = "editor";
     }
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    initUserRole();
+    updateAdminUI();
+    initAdminInterface();
+});
+
+function initAdminInterface() {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    const isAdmin = user.role === "admin";
+
+    const adminPanel = document.querySelector(".admin-panel");
+    const usersTab = document.getElementById("tab-users");
+    const historyTab = document.getElementById("tab-history");
+    const editorTab = document.getElementById("tab-editor");
+
+    if (!isAdmin) {
+        adminPanel?.classList.add("hidden");
+
+        usersTab?.classList.add("hidden");
+        historyTab?.classList.add("hidden");
+        editorTab?.classList.add("hidden");
+
+    }
+}
+
+function updateAdminUI() {
+    const isAdmin = currentUserRole === "admin";
+    document.getElementById("admin-panel").style.display =
+        isAdmin ? "flex" : "none";
+    document.getElementById("tab-users").style.display =
+        isAdmin ? "inline-flex" : "none";
+    document.getElementById("tab-history").style.display =
+        isAdmin ? "inline-flex" : "none";
+    document.getElementById("tab-editor").style.display =
+        isAdmin ? "inline-flex" : "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    initUserRole();
+    updateAdminUI();
+});
+
 function switchTab(tab) {
-
+    if (currentUserRole !== "admin" && (tab === "users" || tab === "history")) {
+        showToast("Недостаточно прав");
+        return;
+    }
     currentTab = tab;
-
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.toggle(
             "active",
@@ -1569,20 +1856,12 @@ function switchTab(tab) {
     });
 
     const form = document.getElementById("form");
-    const usersPanel =
-        document.getElementById("users-panel");
-    const historyPanel =
-        document.getElementById("history-panel");
+    const usersPanel = document.getElementById("users-panel");
+    const historyPanel = document.getElementById("history-panel");
 
-    form.style.display =
-        tab === "editor" ? "block" : "none";
-
-    usersPanel.style.display =
-        tab === "users" ? "block" : "none";
-
-    historyPanel.style.display =
-        tab === "history" ? "block" : "none";
-
+    form.style.display = tab === "editor" ? "block" : "none";
+    usersPanel.style.display = tab === "users" ? "block" : "none";
+    historyPanel.style.display = tab === "history" ? "block" : "none";
     if (tab === "users") {
         loadUsersPanel();
     }
@@ -1599,18 +1878,22 @@ document.getElementById("tab-history").addEventListener("click", () => switchTab
 // Инициализация при загрузке
 document.addEventListener("DOMContentLoaded", () => {
     initAdminInterface();
+<<<<<<< HEAD
     
+=======
+>>>>>>> cbaa843 (update authtorization)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('tab') === 'users') switchTab('users');
 });
-
 updateStepsUI();
 
+<<<<<<< HEAD
 
+=======
+//пользователи
+>>>>>>> cbaa843 (update authtorization)
 async function loadUsersPanel() {
-
     const token = localStorage.getItem("token");
-
     const res = await fetch(
         "http://localhost:5000/users",
         {
@@ -1619,23 +1902,13 @@ async function loadUsersPanel() {
             }
         }
     );
-
     if (!res.ok) return;
-
     const users = await res.json();
-
-    const container =
-        document.getElementById("users-list");
-
+    const container = document.getElementById("users-list");
     container.innerHTML = "";
-
     users.forEach(user => {
-
-        const card =
-            document.createElement("div");
-
+        const card = document.createElement("div");
         card.className = "user-card";
-
         card.innerHTML = `
             <div class="user-info">
                 <div class="user-name">
@@ -1649,30 +1922,31 @@ async function loadUsersPanel() {
 
             <div class="user-actions">
                 <button
-                    class="admin-small-btn edit"
+                    class="admin-small-btn edit submit"
                     onclick="changeUserRole('${user.id}', '${user.role}')"
                 >
                     Сменить роль
                 </button>
 
                 <button
-                    class="admin-small-btn delete"
+                    class="admin-small-btn delete submit"
                     onclick="deleteUser('${user.id}')"
                 >
                     Удалить
                 </button>
             </div>
         `;
-
         container.appendChild(card);
     });
 }
 
+<<<<<<< HEAD
 
+=======
+//история
+>>>>>>> cbaa843 (update authtorization)
 async function loadHistoryPanel() {
-
     const token = localStorage.getItem("token");
-
     const res = await fetch(
         "http://localhost:5000/history",
         {
@@ -1681,23 +1955,13 @@ async function loadHistoryPanel() {
             }
         }
     );
-
     if (!res.ok) return;
-
     const history = await res.json();
-
-    const container =
-        document.getElementById("history-list");
-
+    const container = document.getElementById("history-list");
     container.innerHTML = "";
-
     history.reverse().forEach(item => {
-
-        const card =
-            document.createElement("div");
-
+        const card = document.createElement("div");
         card.className = "history-card";
-
         card.innerHTML = `
             <div class="history-info">
 
@@ -1716,57 +1980,48 @@ async function loadHistoryPanel() {
 
             </div>
         `;
-
         container.appendChild(card);
     });
 }
 
+<<<<<<< HEAD
 const createUserModal =
     document.getElementById("createUserModal");
 
+=======
+// создание пользователя
+const createUserModal = document.getElementById("createUserModal");
+>>>>>>> cbaa843 (update authtorization)
 document
     .getElementById("open-create-user")
     .addEventListener("click", () => {
-
+        resetCreateUserForm();
         createUserModal.style.display = "flex";
+        btnEdit.style.display = "none";
     });
-
 document
     .getElementById("closeCreateUserModal")
     .addEventListener("click", () => {
-
+        resetCreateUserForm();
         createUserModal.style.display = "none";
     });
-
 document
     .getElementById("create-user-btn")
     .addEventListener("click", async () => {
-
-        const login =
-            document
-                .getElementById("new-user-login")
-                .value
-                .trim();
-
-        const password =
-            document
-                .getElementById("new-user-password")
-                .value
-                .trim();
-
-        const role =
-            document
-                .getElementById("new-user-role")
-                .value;
-
+        const login = document.getElementById("new-user-login")
+            .value
+            .trim();
+        const password = document.getElementById("new-user-password")
+            .value
+            .trim();
+        const role = document.getElementById("new-user-role")
+            .value;
         if (!login || !password) {
             showToast("Заполните все поля");
             return;
         }
-
         const token =
             localStorage.getItem("token");
-
         const res = await fetch(
             "http://localhost:5000/users",
             {
@@ -1784,84 +2039,73 @@ document
                 })
             }
         );
-
         if (res.ok) {
-
+            resetCreateUserForm();
             createUserModal.style.display =
                 "none";
-
             loadUsersPanel();
-
             showToast("Пользователь создан");
-
         } else {
-
             showToast("Ошибка создания");
         }
     });
 
+<<<<<<< HEAD
+=======
+function resetCreateUserForm() {
+    document.getElementById("new-user-login").value = "";
+    document.getElementById("new-user-password").value = "";
+    document.getElementById("new-user-role").value = "editor";
+}
+>>>>>>> cbaa843 (update authtorization)
 
+// изменить роль
 async function changeUserRole(id, currentRole) {
-
-    const newRole =
-        currentRole === "admin"
-            ? "editor"
-            : "admin";
-
-    const token =
-        localStorage.getItem("token");
-
+    const newRole = currentRole === "admin"
+        ? "editor"
+        : "admin";
+    const token = localStorage.getItem("token");
     const res = await fetch(
         `http://localhost:5000/users/${id}/role`,
         {
             method: "PATCH",
-
             headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`
             },
-
             body: JSON.stringify({
                 role: newRole
             })
         }
     );
-
     if (res.ok) {
-
         loadUsersPanel();
-
         showToast("Роль изменена");
     }
 }
 
+<<<<<<< HEAD
 
 
+=======
+//удаление пользователя
+>>>>>>> cbaa843 (update authtorization)
 async function deleteUser(id) {
-
     const confirmDelete =
         confirm("Удалить пользователя?");
-
     if (!confirmDelete) return;
-
-    const token =
-        localStorage.getItem("token");
-
+    const token = localStorage.getItem("token");
     const res = await fetch(
         `http://localhost:5000/users/${id}`,
         {
             method: "DELETE",
-
             headers: {
                 Authorization: `Bearer ${token}`
             }
         }
     );
-
     if (res.ok) {
-
         loadUsersPanel();
-
         showToast("Пользователь удалён");
     }
 }

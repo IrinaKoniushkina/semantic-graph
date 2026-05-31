@@ -15,7 +15,7 @@ const infoPanel = d3.select("#info");
 
 const categoryBackgrounds = {
     all: "url('images/графBG.png')",
-    культура: "url('images/cultureBG.png')",
+    культура: "url('images/cultureBG.jfif')",
     молодежь: "url('images/youthBG.png')",
     туризм: "url('images/tourismBg.png')"
 };
@@ -246,12 +246,17 @@ function initGraph(data) {
         .enter()
         .append("line")
         .attr("stroke", d => {
+<<<<<<< HEAD
             if (d.types && d.types.length === 2) {
+=======
+            const hasGeo = d.relations?.some(r => r.type === "geo");
+            const hasHistory = d.relations?.some(r => r.type === "history");
+
+            if (hasGeo && hasHistory) {
+>>>>>>> cbaa843 (update authtorization)
                 return "url(#edge-gradient)";
             }
-            return d.relations?.some(r => r.type === "history") || d.type === "history"
-                ? "#BC461B"
-                : "#1C9284";
+            return hasHistory ? "#BC461B" : "#1C9284";
         })
         .attr("stroke-width", 1.5)
         .attr("stroke-opacity", 0.85);
@@ -780,9 +785,6 @@ function initGraph(data) {
 
 
     function renderTimeline(images) {
-        if (!images || images.length === 0) {
-            return "<p>Нет изображений</p>";
-        }
         return `
         <div class="timeline">
         ${images.map((item, index) => `

@@ -446,5 +446,152 @@
     "action": "EDIT_NODE",
     "target": "naberezhnaya_angary",
     "date": "2026-05-13T17:47:07.350Z"
+  },
+  {
+    "id": "1778995771430",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:29:31.430Z"
+  },
+  {
+    "id": "1778995773677",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:29:33.677Z"
+  },
+  {
+    "id": "1778995863500",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:31:03.500Z"
+  },
+  {
+    "id": "1778995863918",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:31:03.918Z"
+  },
+  {
+    "id": "1778995882527",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:31:22.528Z"
+  },
+  {
+    "id": "1778995882821",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:31:22.822Z"
+  },
+  {
+    "id": "1778996130917",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:35:30.917Z"
+  },
+  {
+    "id": "1778996131175",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "naberezhnaya_angary",
+    "date": "2026-05-17T05:35:31.175Z"
+  },
+  {
+    "id": "1779001632470",
+    "user": "editor",
+    "action": "CREATE_NODE",
+    "target": "1779001631884",
+    "date": "2026-05-17T07:07:12.470Z"
+  },
+  {
+    "id": "1779001897820",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "1779001631884",
+    "date": "2026-05-17T07:11:37.820Z"
+  },
+  {
+    "id": "1779001897873",
+    "user": "editor",
+    "action": "EDIT_NODE",
+    "target": "1779001631884",
+    "date": "2026-05-17T07:11:37.873Z"
+  },
+  {
+    "id": "1779008786546",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:06:26.546Z"
+  },
+  {
+    "id": "1779008790234",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:06:30.234Z"
+  },
+  {
+    "id": "1779009249815",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:14:09.815Z"
+  },
+  {
+    "id": "1779009249949",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:14:09.949Z"
+  },
+  {
+    "id": "1779009824746",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:23:44.746Z"
+  },
+  {
+    "id": "1779009824847",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "igu",
+    "date": "2026-05-17T09:23:44.847Z"
+  },
+  {
+    "id": "1779010697621",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "reka_angara",
+    "date": "2026-05-17T09:38:17.621Z"
+  },
+  {
+    "id": "1779010698269",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "reka_angara",
+    "date": "2026-05-17T09:38:18.269Z"
+  },
+  {
+    "id": "1779010723364",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "reka_angara",
+    "date": "2026-05-17T09:38:43.364Z"
+  },
+  {
+    "id": "1779010723461",
+    "user": "admin",
+    "action": "EDIT_NODE",
+    "target": "reka_angara",
+    "date": "2026-05-17T09:38:43.461Z"
   }
 ]

@@ -74,7 +74,6 @@
       font-size: 14px;
       line-height: 1.4;
       white-space: pre-line;
-      text-align: justify;
       margin-top: 10px;
     }
 
@@ -693,7 +692,6 @@
       padding: 0px;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.05);
-      text-align: justify;
       line-height: 1.4;
       font-size: 14px;
       color: #000000;

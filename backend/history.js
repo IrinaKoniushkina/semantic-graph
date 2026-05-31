@@ -1,22 +1,57 @@
-const fs = require('fs');
-const path = require('path');
-const HISTORY_FILE = path.join(__dirname, "history.json");
+const neo4j =
+  require("neo4j-driver");
 
-function logAction(userLogin, action, target) {
-  let history = [];
-  if (fs.existsSync(HISTORY_FILE)) {
-    history = JSON.parse(fs.readFileSync(HISTORY_FILE));
+const driver =
+  neo4j.driver(
+    "bolt://127.0.0.1:7687",
+    neo4j.auth.basic(
+      "neo4j",
+      "57281292"
+    )
+  );
+
+async function logAction(
+  user,
+  action,
+  target
+) {
+
+  const session =
+    driver.session();
+
+  try {
+
+    await session.run(
+      `
+            CREATE (h:History {
+
+                id:$id,
+                user:$user,
+                action:$action,
+                target:$target,
+                date:$date
+
+            })
+            `,
+      {
+        id: Date.now().toString(),
+        user,
+        action,
+        target,
+        date:
+          new Date()
+            .toISOString()
+      }
+    );
+
   }
 
-  history.push({
-    id: Date.now().toString(),
-    user: userLogin,
-    action,
-    target,
-    date: new Date().toISOString()
-  });
+  finally {
 
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+    await session.close();
+  }
 }
 
-module.exports = { logAction };
+module.exports = {
+  logAction
+};
