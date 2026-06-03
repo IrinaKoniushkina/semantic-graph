@@ -108,6 +108,7 @@ form {
 .mode-btn {
   background: none;
   border: none;
+  cursor: pointer;
 }
 
 .mode-btn img {
@@ -915,9 +916,6 @@ button[disabled]:hover::after {
   z-index: 1000;
 }
 
-/* =========================
-   ADMIN
-========================= */
 
 .admin-panel {
   width: 100%;

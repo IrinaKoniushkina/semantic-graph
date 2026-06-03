@@ -1,5 +1,3 @@
-// frontend/js/core/simulation.js
-
 import { getLayout } from './utils.js';
 
 let simulation = null;

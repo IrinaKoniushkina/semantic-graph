@@ -37,13 +37,6 @@ const upload = multer({ storage: multer.memoryStorage() })
 app.use(cors())
 app.use(express.json())
 
-<<<<<<< HEAD
-//логин
-app.post("/login", (req, res) => {
-  console.log(req.body);
-  const { login: username, password } = req.body;
-  const result = login(username, password);
-=======
 const auth = require('./auth');
 console.log(auth);
 
@@ -51,7 +44,6 @@ console.log(auth);
 app.post("/login", async (req, res) => {
   try {
     const { login: username, password } = req.body || {};
->>>>>>> cbaa843 (update authtorization)
 
     if (!username || !password) {
       return res.status(400).json({
@@ -89,12 +81,12 @@ app.get("/places", async (req, res) => {
     `);
 
     const nodesMap = {};
-    const edgeMap = new Map();
+    const edgeMap = new Map(); // ← Новый способ обработки связей
 
     result.records.forEach(record => {
       const p = record.get("p").properties;
 
-      //вершины
+      // === НОДЫ ===
       if (!nodesMap[p.id]) {
         let images = [];
         try {
@@ -121,7 +113,7 @@ app.get("/places", async (req, res) => {
         };
       }
 
-      //связи
+      // === СВЯЗИ ===
       const r = record.get("r");
       const other = record.get("other");
 
@@ -129,6 +121,7 @@ app.get("/places", async (req, res) => {
         const id1 = p.id;
         const id2 = other.properties.id;
 
+        // Создаём уникальный ключ для пары нод (независимо от порядка)
         const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
 
         const type = r.properties.type || "geo";
@@ -149,6 +142,8 @@ app.get("/places", async (req, res) => {
         });
       }
     });
+
+    // Преобразуем Map в массив для отправки на фронтенд
     const edges = [];
     edgeMap.forEach(edge => {
       edges.push(edge);
@@ -167,7 +162,7 @@ app.get("/places", async (req, res) => {
   }
 });
 
-// добавить или изменить вершину
+// ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
 app.post("/places", authMiddleware, async (req, res) => {
   const { node, related, mode } = req.body;
 
@@ -184,7 +179,7 @@ app.post("/places", authMiddleware, async (req, res) => {
     const isEdit = mode === "edit";
     let oldImages = [];
 
-    // получаем старые изображения
+    // 1. Получаем старые изображения (только при редактировании)
     if (isEdit) {
       const oldRes = await session.run(
         `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
@@ -203,7 +198,8 @@ app.post("/places", authMiddleware, async (req, res) => {
     }
 
     const newImages = node.content?.description?.images || [];
-    
+
+    // 2. Удаляем лишние изображения из S3
     if (isEdit) {
       const imagesToDelete = oldImages.filter(oldImg =>
         !newImages.some(newImg => newImg?.src === oldImg?.src)
@@ -222,6 +218,7 @@ app.post("/places", authMiddleware, async (req, res) => {
       }
     }
 
+    // 3. Удаляем старые связи (перед обновлением ноды)
     if (isEdit) {
       await session.run(
         `MATCH (p:Place {id: $id})-[r:RELATED]-() DELETE r`,
@@ -229,6 +226,7 @@ app.post("/places", authMiddleware, async (req, res) => {
       );
     }
 
+    // 4. Создаём / обновляем ноду
     await session.run(
       `
       MERGE (p:Place {id: $id})
@@ -256,6 +254,7 @@ app.post("/places", authMiddleware, async (req, res) => {
       }
     );
 
+    // 5. Добавляем новые связи
     if (Array.isArray(related) && related.length > 0) {
       for (const rel of related) {
         if (!rel?.id) continue;
@@ -293,13 +292,13 @@ app.post("/places", authMiddleware, async (req, res) => {
   }
 });
 
-// удалить вершину
+// УДАЛИТЬ ВЕРШИНУ
 app.delete("/places/:id", authMiddleware, async (req, res) => {
   const id = String(req.params.id);
   const session = driver.session();
 
   try {
-    //получить изображения
+    // 1. Получаем изображения
     const result = await session.run(
       `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
       { id }
@@ -312,6 +311,7 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
       images = JSON.parse(raw || "[]");
     }
 
+    // 2. Удаляем файлы из S3
     for (const img of images) {
       if (!img?.src) continue;
 
@@ -327,6 +327,8 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
         console.warn("Ошибка удаления файла:", key, e.message);
       }
     }
+
+    // 3. Удаляем ноду
     await session.run(
       `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
@@ -342,6 +344,7 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
   }
 });
 
+//ЗАГРУЗКА ИЗОБРАЖЕНИЯ
 app.post("/upload-images", authMiddleware, (req, res) => {
   upload.array("images")(req, res, async (err) => {
 
@@ -384,12 +387,6 @@ app.post("/upload-images", authMiddleware, (req, res) => {
   });
 });
 
-<<<<<<< HEAD
-app.get("/users", authMiddleware, adminOnly, (req, res) => {
-  try {
-    if (!fs.existsSync(USERS_FILE)) {
-      return res.json([]);
-=======
 function loadUsers() {
   if (!fs.existsSync(USERS_FILE)) return [];
   const raw = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
@@ -437,25 +434,16 @@ app.get(
 
       res.json(users);
 
->>>>>>> cbaa843 (update authtorization)
     }
 
     catch (err) {
 
       console.error(err);
 
-<<<<<<< HEAD
-    const safeUsers = users.map(user => ({
-      id: user.id,
-      login: user.login,
-      role: user.role
-    }));
-=======
       res.status(500).json({
         error: "Ошибка получения пользователей"
       });
     }
->>>>>>> cbaa843 (update authtorization)
 
     finally {
       await session.close();
@@ -598,11 +586,6 @@ app.delete(
     }
   });
 
-<<<<<<< HEAD
-app.get("/history", authMiddleware, adminOnly, (req, res) => {
-  try {
-    const HISTORY_FILE = path.join(__dirname, "history.json");
-=======
 // ПОЛУЧИТЬ ИСТОРИЮ ИЗМЕНЕНИЙ
 app.get(
   "/history",
@@ -633,7 +616,6 @@ app.get(
         );
 
       res.json(history);
->>>>>>> cbaa843 (update authtorization)
 
     }
 
@@ -651,7 +633,6 @@ app.get(
       await session.close();
     }
   });
-
 
 
 app.listen(PORT, () => {
