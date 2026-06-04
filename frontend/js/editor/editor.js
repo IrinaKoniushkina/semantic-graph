@@ -1,4 +1,4 @@
-// Основной файл: инициализация событий и запуск
+// Инициализация событий и запуск
 document.addEventListener("DOMContentLoaded", () => {
     // Привязка счётчиков
     bindCounter(nameInput, document.querySelector("#name-counter"), limits.name);
@@ -41,7 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.location.href = "login.html";
     });
-
 
     // Удаление вершины
     deleteBtn.addEventListener("click", () => { if (editingNode) modal.style.display = "flex"; });
@@ -273,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Кнопки сброса шага
+    // Кнопка сброса
     document.querySelectorAll(".reset-step").forEach(btn => {
         btn.addEventListener("click", () => resetModal.style.display = "flex");
     });
@@ -306,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("tab-users").addEventListener("click", () => switchTab("users"));
     document.getElementById("tab-history").addEventListener("click", () => switchTab("history"));
 
-    // Создание пользователя (модалка)
+    // Создание пользователя 
     const createUserModal = document.getElementById("createUserModal");
     document.getElementById("open-create-user").addEventListener("click", () => {
         resetCreateUserForm();
@@ -361,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initAdminInterface();
     updateStepsUI();
 
-    // Параметр URL для вкладки
+    // URL для вкладки
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('tab') === 'users') switchTab('users');
 });

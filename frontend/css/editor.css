@@ -88,12 +88,13 @@ body {
   justify-content: flex-end;
   gap: 10px;
   width: 100%;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
   flex-direction: row;
 }
 
 form {
   width: 80%;
+  height: 561px;
 }
 
 .top-buttons {
@@ -344,7 +345,6 @@ button#addUrlBtn {
   align-items: start;
 }
 
-/* скрытый input */
 #images-input {
   display: none;
 }
@@ -473,7 +473,6 @@ button#addUrlBtn {
 
 .input-wrapper textarea {
   padding-bottom: 30px;
-  /* чтобы текст не наезжал на счётчик */
 }
 
 .preview-item {
@@ -740,7 +739,7 @@ input[type="radio"] {
 .form-step {
   display: none;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   min-height: 58vh;
 }
 
@@ -752,7 +751,7 @@ input[type="radio"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 35px;
+  margin-bottom: 20px;
 }
 
 .step {
@@ -927,10 +926,12 @@ button[disabled]:hover::after {
 .admin-btn {
   display: flex;
   gap: 15px;
+  justify-content: center;
 }
 
 .tab-btn {
   padding: 10px 24px;
+  font-weight: bold;
   border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;
@@ -990,11 +991,11 @@ button[disabled]:hover::after {
   background: rgba(255, 255, 255, 0.75);
   border: 2px solid #5D474E;
   border-radius: 10px;
-  padding: 18px;
+  padding: 20px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(10px);
 }
 
 .user-info,
@@ -1023,17 +1024,15 @@ button[disabled]:hover::after {
 }
 
 .admin-small-btn.edit {
-  border: 2px solid #379f04;
-  color: #379f04;
-  background: white;
+  background: #379f04;
   font-size: 16px;
+  height: 40px;
 }
 
 .admin-small-btn.delete {
-  border: 2px solid #AD0304;
-  color: #ad0304;
-  background: white;
+  background: #AD0304;
   font-size: 16px;
+  height: 40px;
 }
 
 .admin-form {
@@ -1091,4 +1090,17 @@ button[disabled]:hover::after {
     transform: scale(1);
     opacity: 1;
   }
+}
+.history-change{
+  margin: 20px 0;
+}
+.history-change b{
+  margin-bottom: 15px;
+}
+
+.red{
+  color: #AD0304;
+}
+.green{
+  color: #379f04;
 }

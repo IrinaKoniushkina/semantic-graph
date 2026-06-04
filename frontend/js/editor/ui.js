@@ -27,7 +27,7 @@ iconPicker.querySelectorAll("svg").forEach(svg => {
     svg.onmouseleave = () => { tooltip.style.opacity = "0"; };
 });
 
-// Редактор текста (обработка вставки)
+// Редактор текста
 document.querySelectorAll('.editor').forEach(editor => {
     editor.addEventListener('paste', function (e) {
         e.preventDefault();

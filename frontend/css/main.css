@@ -625,7 +625,6 @@
       border-color: #BC461B;
     }
 
-    /* HEADER */
     .related-group-header {
       padding: 12px 16px;
       font-weight: 600;
@@ -697,7 +696,6 @@
       color: #000000;
     }
 
-    /* LIGHTBOX */
 
     .lightbox {
       position: fixed;

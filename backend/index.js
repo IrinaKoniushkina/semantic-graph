@@ -1,5 +1,15 @@
 require("dotenv").config();
 
+const iconNames = {
+  museum: "Музей",
+  monument: "Памятник",
+  theater: "Театр",
+  church: "Храм",
+  park: "Парк",
+  user: "Персоналии",
+  building: "Здание"
+};
+
 const neo4j = require("neo4j-driver");
 
 const driver = neo4j.driver(
@@ -40,11 +50,10 @@ app.use(express.json())
 const auth = require('./auth');
 console.log(auth);
 
-// ====================== LOGIN ======================
+//Логин
 app.post("/login", async (req, res) => {
   try {
     const { login: username, password } = req.body || {};
-
     if (!username || !password) {
       return res.status(400).json({
         error: "No credentials"
@@ -52,13 +61,11 @@ app.post("/login", async (req, res) => {
     }
 
     const result = await login(username, password);
-
     if (!result) {
       return res.status(401).json({
         error: "Неверный логин или пароль"
       });
     }
-
     res.json(result);
 
   } catch (err) {
@@ -69,7 +76,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ПОЛУЧИТЬ ГРАФ
+// Получить граф
 app.get("/places", async (req, res) => {
   const session = driver.session();
 
@@ -81,12 +88,12 @@ app.get("/places", async (req, res) => {
     `);
 
     const nodesMap = {};
-    const edgeMap = new Map(); // ← Новый способ обработки связей
+    const edgeMap = new Map();
 
     result.records.forEach(record => {
       const p = record.get("p").properties;
 
-      // === НОДЫ ===
+      // Ноды
       if (!nodesMap[p.id]) {
         let images = [];
         try {
@@ -113,7 +120,7 @@ app.get("/places", async (req, res) => {
         };
       }
 
-      // === СВЯЗИ ===
+      // Связи
       const r = record.get("r");
       const other = record.get("other");
 
@@ -121,7 +128,6 @@ app.get("/places", async (req, res) => {
         const id1 = p.id;
         const id2 = other.properties.id;
 
-        // Создаём уникальный ключ для пары нод (независимо от порядка)
         const key = id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`;
 
         const type = r.properties.type || "geo";
@@ -143,7 +149,6 @@ app.get("/places", async (req, res) => {
       }
     });
 
-    // Преобразуем Map в массив для отправки на фронтенд
     const edges = [];
     edgeMap.forEach(edge => {
       edges.push(edge);
@@ -162,7 +167,54 @@ app.get("/places", async (req, res) => {
   }
 });
 
-// ДОБАВИТЬ ИЛИ ИЗМЕНИТЬ ВЕРШИНУ
+function computeDiff(oldNode, newNode) {
+  const diff = [];
+  const arraysEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  if (oldNode.name !== newNode.name) {
+    diff.push({ field: "Название", old: oldNode.name, new: newNode.name });
+  }
+  if (oldNode.keywords !== newNode.keywords) {
+    diff.push({ field: "Ключевые слова", old: oldNode.keywords, new: newNode.keywords });
+  }
+  if (!arraysEqual(oldNode.category || [], newNode.category || [])) {
+    diff.push({
+      field: "Категории",
+      old: (oldNode.category || []).join(", "),
+      new: (newNode.category || []).join(", ")
+    });
+  }
+  if (oldNode.icon !== newNode.icon) {
+    diff.push({ field: "Иконка", old: oldNode.icon, new: newNode.icon });
+  }
+  if ((oldNode.description || "") !== newNode.description) {
+    diff.push({
+      field: "Описание",
+      old: (oldNode.description || "").substring(0, 100) + "...",
+      new: newNode.description.substring(0, 100) + "..."
+    });
+  }
+  if ((oldNode.history || "") !== newNode.history) {
+    diff.push({
+      field: "История",
+      old: (oldNode.history || "").substring(0, 100) + "...",
+      new: newNode.history.substring(0, 100) + "..."
+    });
+  }
+  if ((oldNode.modern || "") !== newNode.modern) {
+    diff.push({
+      field: "Наши дни",
+      old: (oldNode.modern || "").substring(0, 100) + "...",
+      new: newNode.modern.substring(0, 100) + "..."
+    });
+  }
+  if ((oldNode.geo || "") !== newNode.geo) {
+    diff.push({ field: "Геоданные", old: oldNode.geo || "", new: newNode.geo });
+  }
+  return diff;
+}
+
+// Добавить/изменить вершину
 app.post("/places", authMiddleware, async (req, res) => {
   const { node, related, mode } = req.body;
 
@@ -172,34 +224,35 @@ app.post("/places", authMiddleware, async (req, res) => {
 
   const geo = (related || []).filter(r => r?.type === "geo");
   const history = (related || []).filter(r => r?.type === "history");
-
   const session = driver.session();
 
   try {
     const isEdit = mode === "edit";
     let oldImages = [];
+    let oldNode = null;
 
-    // 1. Получаем старые изображения (только при редактировании)
     if (isEdit) {
       const oldRes = await session.run(
-        `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
+        `
+          MATCH (p:Place {id:$id})
+          RETURN p
+        `,
         { id: node.id }
-      );
-      await logAction(
-        req.user.login,
-        isEdit ? "EDIT_NODE" : "CREATE_NODE",
-        node.id
       );
 
       if (oldRes.records.length) {
-        const imagesStr = oldRes.records[0].get("images");
-        oldImages = imagesStr ? JSON.parse(imagesStr) : [];
+        oldNode = oldRes.records[0]
+          .get("p")
+          .properties;
+      }
+      if (oldNode?.images) {
+        oldImages = JSON.parse(oldNode.images);
       }
     }
 
     const newImages = node.content?.description?.images || [];
 
-    // 2. Удаляем лишние изображения из S3
+    // Удаление изображений
     if (isEdit) {
       const imagesToDelete = oldImages.filter(oldImg =>
         !newImages.some(newImg => newImg?.src === oldImg?.src)
@@ -217,16 +270,189 @@ app.post("/places", authMiddleware, async (req, res) => {
         }
       }
     }
+    let changes = [];
+    let oldRelations = [];
 
-    // 3. Удаляем старые связи (перед обновлением ноды)
     if (isEdit) {
-      await session.run(
-        `MATCH (p:Place {id: $id})-[r:RELATED]-() DELETE r`,
-        { id: node.id }
-      );
+      const oldRelationsRes = await session.run(`
+        MATCH (p:Place {id:$id})-[r:RELATED]-(other:Place)
+        RETURN other.name as target,
+              r.type as type,
+              r.reason as reason
+      `, { id: node.id });
+
+      oldRelations = oldRelationsRes.records.map(r => ({
+        target: r.get("target"),
+        type: r.get("type"),
+        reason: r.get("reason") || ""
+      }));
     }
 
-    // 4. Создаём / обновляем ноду
+    if (isEdit && oldNode) {
+      const newDescription = node.content?.description?.text || "";
+      const newHistory = node.content?.history || "";
+      const newModern = node.content?.modern || "";
+      const oldCategories = oldNode.category || [];
+      const newCategories = node.category || [];
+      const iconNames = {
+        museum: "Музей",
+        monument: "Памятник",
+        church: "Церковь",
+        theater: "Театр",
+        park: "Парк",
+        bridge: "Мост",
+        building: "Здание"
+      };
+
+      //Название
+      if ((oldNode.name || "") !== (node.name || "")) {
+        changes.push({
+          field: "Название",
+          old: "Было: " + oldNode.name || "",
+          new: "Стало: " + node.name || ""
+        });
+      }
+
+      //Ключевые слова
+      if ((oldNode.keywords || "") !== (node.keywords || "")) {
+        changes.push({
+          field: "Ключевые слова",
+          old: "Было: " + oldNode.keywords || "",
+          new: "Стало: " + node.keywords || ""
+        });
+      }
+
+      //Категории
+      if (JSON.stringify(oldCategories) !== JSON.stringify(newCategories)) {
+        changes.push({
+          field: "Категории",
+          old: "Было: " + oldCategories.join(", "),
+          new: "Стало: " + newCategories.join(", ")
+        });
+      }
+
+      //Иконка
+      if ((oldNode.icon || "") !== (node.icon || "")) {
+        changes.push({
+          field: "Иконка",
+          old: "Было: " + iconNames[oldNode.icon] || oldNode.icon || "",
+          new: "Стало: " + iconNames[node.icon] || node.icon || ""
+        });
+      }
+
+      //Гео (Яндекс карта)
+      if ((oldNode.geo || "") !== (node.geo || "")) {
+        let geoAction = "Изменен виджет Яндекс Карт";
+        if (!oldNode.geo && node.geo) geoAction = "Добавлен виджет Яндекс Карт";
+        if (oldNode.geo && !node.geo) geoAction = "Удален виджет Яндекс Карт";
+
+        changes.push({
+          field: "Яндекс Карты",
+          old: geoAction,
+          new: ""
+        });
+      }
+
+      //Описание
+      if ((oldNode.description || "") !== newDescription) {
+        changes.push({
+          field: "Описание",
+          old: "Текст изменен",
+          new: ""
+        });
+      }
+
+      //История
+      if ((oldNode.history || "") !== newHistory) {
+        changes.push({
+          field: "История",
+          old: "Текст изменен",
+          new: ""
+        });
+      }
+
+      //Наши дни
+      if ((oldNode.modern || "") !== newModern) {
+        changes.push({
+          field: "Наши дни",
+          old: "Текст изменен",
+          new: ""
+        });
+      }
+      console.log("CHANGES:", changes);
+    }
+    const newRelations = (related || []).map(r => ({
+      id: r.id,
+      target: r.name,
+      type: r.type || "geo",
+      reason: r.reason || ""
+    }));
+
+    const relationChanges = [];
+    for (const newRel of newRelations) {
+      const exists = oldRelations.find(oldRel =>
+        oldRel.target === newRel.target &&
+        oldRel.type === newRel.type &&
+        (oldRel.reason || "") === (newRel.reason || "")
+      );
+
+      if (!exists) {
+        if (newRel.type === "geo") {
+          relationChanges.push(
+            `Добавлена географическая связь с объектом "${newRel.target}"`
+          );
+        } else {
+          relationChanges.push(
+            `Добавлена культурно-историческая связь с объектом "${newRel.target}"` +
+            (newRel.reason ? `. Причина: ${newRel.reason}` : "")
+          );
+        }
+      }
+    }
+
+    for (const oldRel of oldRelations) {
+      const exists = newRelations.find(newRel =>
+        newRel.target === oldRel.target &&
+        newRel.type === oldRel.type &&
+        (newRel.reason || "") === (oldRel.reason || "")
+      );
+
+      if (!exists) {
+        if (oldRel.type === "geo") {
+          relationChanges.push(
+            `Удалена географическая связь с объектом "${oldRel.target}"`
+          );
+        } else {
+          relationChanges.push(
+            `Удалена культурно-историческая связь с объектом "${oldRel.target}"`
+          );
+        }
+      }
+    }
+    for (const newRel of newRelations) {
+      const oldRel = oldRelations.find(rel =>
+        rel.target === newRel.target &&
+        rel.type === newRel.type
+      );
+      if (
+        oldRel &&
+        oldRel.type === "history" &&
+        oldRel.reason !== newRel.reason
+      ) {
+        relationChanges.push(
+          `Изменена причина связи с объектом "${newRel.target}". Было: "${oldRel.reason}". Стало: "${newRel.reason}"`
+        );
+      }
+    }
+    if (relationChanges.length) {
+      changes.push({
+        field: "Связи",
+        old: relationChanges.join("\n"),
+        new: ""
+      });
+    }
+
+    //Создаём/обновляем ноду
     await session.run(
       `
       MERGE (p:Place {id: $id})
@@ -253,35 +479,44 @@ app.post("/places", authMiddleware, async (req, res) => {
         geo: node.geo || ""
       }
     );
+    if (isEdit) {
+      await session.run(
+        `MATCH (p:Place {id: $id})-[r:RELATED]-() DELETE r`,
+        { id: node.id }
+      );
+    }
 
-    // 5. Добавляем новые связи
+    // Добавляем новые связи
     if (Array.isArray(related) && related.length > 0) {
       for (const rel of related) {
         if (!rel?.id) continue;
-
         const sourceId = node.id;
         const targetId = rel.id;
         const type = rel.type || "geo";
-
         await session.run(
           `
           MATCH (a:Place {id: $sourceId})
           MATCH (b:Place {id: $targetId})
-
           MERGE (a)-[r:RELATED {type: $type}]-(b)
-
           SET r.reason = $reason
           `,
           { sourceId, targetId, type, reason: rel.reason || "" }
         );
       }
     }
+    console.log("SAVE HISTORY", {
+      user: req.user.login,
+      action: isEdit ? "EDIT_NODE" : "CREATE_NODE",
+      target: node.name,
+      changes
+    });
     await logAction(
       req.user.login,
       isEdit ? "EDIT_NODE" : "CREATE_NODE",
-      node.id
+      node.name,
+      node.id,
+      changes
     );
-
     res.json({ success: true });
 
   } catch (err) {
@@ -292,31 +527,26 @@ app.post("/places", authMiddleware, async (req, res) => {
   }
 });
 
-// УДАЛИТЬ ВЕРШИНУ
+//Удалить вершину
 app.delete("/places/:id", authMiddleware, async (req, res) => {
   const id = String(req.params.id);
   const session = driver.session();
-
   try {
-    // 1. Получаем изображения
+    //Получаем изображения
     const result = await session.run(
       `MATCH (p:Place {id: $id}) RETURN p.images AS images`,
       { id }
     );
-
     let images = [];
-
     if (result.records.length) {
       const raw = result.records[0].get("images");
       images = JSON.parse(raw || "[]");
     }
 
-    // 2. Удаляем файлы из S3
+    //Удаляем файлы из S3
     for (const img of images) {
       if (!img?.src) continue;
-
       const key = img.src.split("/").pop(); // имя файла
-
       try {
         await s3.send(new DeleteObjectCommand({
           Bucket: BUCKET,
@@ -327,8 +557,7 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
         console.warn("Ошибка удаления файла:", key, e.message);
       }
     }
-
-    // 3. Удаляем ноду
+    //Удаляем ноду
     await session.run(
       `MATCH (p:Place {id: $id}) DETACH DELETE p`,
       { id }
@@ -344,46 +573,38 @@ app.delete("/places/:id", authMiddleware, async (req, res) => {
   }
 });
 
-//ЗАГРУЗКА ИЗОБРАЖЕНИЯ
+//Загрузка изображений
 app.post("/upload-images", authMiddleware, (req, res) => {
   upload.array("images")(req, res, async (err) => {
-
     if (err) {
       console.error("MULTER ERROR:", err);
       return res.status(500).json({ error: err.message });
     }
-
     try {
       const files = req.files || [];
       if (!files.length) {
         return res.status(400).json({ error: "Нет файлов" });
       }
-
       const urls = [];
       for (const file of files) {
         const safeName = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
         const fileName = Date.now() + "-" + safeName;
-
         await s3.send(new PutObjectCommand({
           Bucket: BUCKET,
           Key: fileName,
           Body: file.buffer,
           ContentType: file.mimetype
         }));
-
         console.log("UPLOAD OK:", fileName);
-
         const url = `https://storage.yandexcloud.net/${BUCKET}/${fileName}`;
         urls.push(url);
       }
-
       res.json({ images: urls });
 
     } catch (err) {
       console.error("UPLOAD ERROR:", err);
       res.status(500).json({ error: err.message });
     }
-
   });
 });
 
@@ -399,241 +620,159 @@ function saveUsers(users) {
   );
 }
 
-// ПОЛУЧИТЬ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+// Получить всех пользователей
 app.get(
   "/users",
   authMiddleware,
   adminOnly,
-
   async (req, res) => {
-
     const session =
       driver.session();
-
     try {
-
       const result =
         await session.run(`
                 MATCH (u:User)
                 RETURN u
                 ORDER BY u.login
             `);
-
       const users =
         result.records.map(r => {
-
           const u =
             r.get("u").properties;
-
           return {
             id: u.id,
             login: u.login,
             role: u.role
           };
         });
-
       res.json(users);
-
     }
-
     catch (err) {
-
       console.error(err);
-
       res.status(500).json({
         error: "Ошибка получения пользователей"
       });
     }
-
     finally {
       await session.close();
     }
   });
 
 //ДОБАВИТЬ ПОЛЬЗОВАТЕЛЕЙ
-app.post(
-  "/users",
-  authMiddleware,
-  adminOnly,
-
-  async (req, res) => {
-
-    const {
+app.post("/users", authMiddleware, adminOnly, async (req, res) => {
+  const { login, password, role } = req.body;
+  const session = driver.session();
+  try {
+    const existing =
+      await session.run(
+        `
+          MATCH (u:User {
+              login:$login
+          })
+          RETURN u
+          `,
+        { login }
+      );
+    if (existing.records.length) {
+      return res.status(400).json({
+        error: "Логин занят"
+      });
+    }
+    const user = {
+      id: Date.now().toString(),
       login,
       password,
-      role
-    } = req.body;
+      role: role || "editor"
+    };
+    await session.run(
+      `
+        CREATE (u:User)
+        SET u=$user
+        `,
+      { user }
+    );
+    res.json({ success: true, user });
+  }
+  finally {
+    await session.close();
+  }
+});
 
-    const session =
-      driver.session();
-
-    try {
-
-      const existing =
-        await session.run(
-          `
-                MATCH (u:User {
-                    login:$login
-                })
-
-                RETURN u
-                `,
-          { login }
-        );
-
-      if (existing.records.length) {
-
-        return res.status(400).json({
-          error: "Логин занят"
-        });
+app.patch("/users/:id/role", authMiddleware, adminOnly, async (req, res) => {
+  const session = driver.session();
+  try {
+    await session.run(
+      `
+        MATCH (u:User {id:$id})
+        SET u.role=$role
+      `,
+      {
+        id: req.params.id,
+        role: req.body.role
       }
+    );
+    res.json({
+      success: true
+    });
+  }
+  finally {
+    await session.close();
+  }
+});
 
-      const user = {
-        id: Date.now().toString(),
-        login,
-        password,
-        role: role || "editor"
+//Удалить пользователя
+app.delete("/users/:id", authMiddleware, adminOnly, async (req, res) => {
+  const session = driver.session();
+  try {
+    await session.run(
+      `
+        MATCH (u:User {id:$id})
+        DELETE u
+      `,
+      {
+        id: req.params.id
+      }
+    );
+    res.json({ success: true });
+  }
+  finally {
+    await session.close();
+  }
+});
+
+// Получить историю
+app.get("/history", authMiddleware, adminOnly, async (req, res) => {
+  const session = driver.session();
+  try {
+    const result = await session.run(
+      `
+        MATCH (h:History)
+        RETURN h
+        ORDER BY h.date DESC
+      `
+    );
+    const history = result.records.map(r => {
+      const item = r.get("h").properties;
+      return {
+        ...item,
+        targetId: item.targetId,
+        changes: item.changes
+          ? JSON.parse(item.changes)
+          : []
       };
-
-      await session.run(
-        `
-            CREATE (u:User)
-
-            SET u=$user
-            `,
-        { user }
-      );
-
-      res.json({
-        success: true,
-        user
-      });
-
-    }
-
-    finally {
-      await session.close();
-    }
-  });
-
-app.patch(
-  "/users/:id/role",
-  authMiddleware,
-  adminOnly,
-
-  async (req, res) => {
-
-    const session =
-      driver.session();
-
-    try {
-
-      await session.run(
-        `
-            MATCH (u:User {id:$id})
-
-            SET u.role=$role
-            `,
-        {
-          id: req.params.id,
-          role: req.body.role
-        }
-      );
-
-      res.json({
-        success: true
-      });
-
-    }
-
-    finally {
-      await session.close();
-    }
-  });
-
-//УДАЛИТЬ ПОЛЬЗОВАТЕЛЯ
-app.delete(
-  "/users/:id",
-  authMiddleware,
-  adminOnly,
-
-  async (req, res) => {
-
-    const session =
-      driver.session();
-
-    try {
-
-      await session.run(
-        `
-            MATCH (u:User {id:$id})
-
-            DELETE u
-            `,
-        {
-          id: req.params.id
-        }
-      );
-
-      res.json({
-        success: true
-      });
-
-    }
-
-    finally {
-      await session.close();
-    }
-  });
-
-// ПОЛУЧИТЬ ИСТОРИЮ ИЗМЕНЕНИЙ
-app.get(
-  "/history",
-  authMiddleware,
-  adminOnly,
-
-  async (req, res) => {
-
-    const session =
-      driver.session();
-
-    try {
-
-      const result =
-        await session.run(
-          `
-                MATCH (h:History)
-
-                RETURN h
-
-                ORDER BY h.date DESC
-                `
-        );
-
-      const history =
-        result.records.map(r =>
-          r.get("h").properties
-        );
-
-      res.json(history);
-
-    }
-
-    catch (err) {
-
-      console.error(err);
-
-      res.status(500).json({
-        error:
-          "Ошибка получения истории"
-      });
-    }
-
-    finally {
-      await session.close();
-    }
-  });
-
+    });
+    res.json(history);
+  }
+  catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Ошибка получения истории"
+    });
+  }
+  finally {
+    await session.close();
+  }
+});
 
 app.listen(PORT, () => {
   console.log("Server running on http://localhost:" + PORT)

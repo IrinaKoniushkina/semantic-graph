@@ -42,7 +42,7 @@
       </div>
     </div>
     <form id="form">
-      <!-- STEPS -->
+      <!-- Шаги -->
       <div class="steps">
         <div class="step active" data-step="1">
           <div class="step-circle">1</div>
@@ -57,7 +57,7 @@
         </div>
       </div>
 
-      <!-- STEP 1 -->
+      <!-- Шаг 1 -->
       <div class="form-step active" data-step="1">
         <div>
           <label>Название:</label>
@@ -126,7 +126,7 @@
         </div>
       </div>
 
-      <!-- STEP 2 -->
+      <!-- Шаг 2 -->
       <div class="form-step" data-step="2">
         <div>
           <label>Выберите связи</label>
@@ -185,7 +185,7 @@
         </div>
       </div>
 
-      <!-- STEP 3 -->
+      <!-- Шаг 3 -->
       <div class="form-step" data-step="3">
         <div>
           <label>Ключевые слова</label>
@@ -208,7 +208,7 @@
             </button>
           </div>
           <div class="tab-content">
-            <!-- DESC -->
+            <!-- Описание -->
             <div class="tab-pane active input-wrapper" id="desc">
               <div class="editor-wrapper">
                 <div class="editor-toolbar">
@@ -239,7 +239,7 @@
               </div>
               <div class="counter" id="desc-counter">0/500</div>
             </div>
-            <!-- HISTORY -->
+            <!-- История -->
             <div class="tab-pane input-wrapper" id="history">
               <div class="editor-wrapper">
                 <div class="editor-toolbar">
@@ -270,7 +270,7 @@
               </div>
               <div class="counter" id="history-counter">0/1500</div>
             </div>
-            <!-- MODERN -->
+            <!-- Наши дни -->
             <div class="tab-pane input-wrapper" id="modern">
               <div class="editor-wrapper">
                 <div class="editor-toolbar">
@@ -316,7 +316,7 @@
         </div>
       </div>
     </form>
-    <!-- USERS PANEL -->
+    <!-- Пользовательская панель -->
     <div id="users-panel" class="admin-content" style="display:none;">
       <div class="admin-section">
         <div id="users-list" class="users-list"></div>
@@ -340,15 +340,16 @@
       <div class="modal-content">
         <span class="modal-close" id="closeCreateUserModal">✕</span>
         <div class="admin-form">
+          <h3 id="modal-user-title">Добавить пользователя</h3>
+
           <input type="text" id="new-user-login" placeholder="Логин">
-          <input type="password" id="new-user-password" placeholder="Пароль">
+          <input type="text" id="new-user-password" placeholder="Пароль">
           <select id="new-user-role">
             <option value="editor">Редактор</option>
             <option value="admin">Администратор</option>
           </select>
-          <button id="create-user-btn" class="wizard-btn submit">
-            Создать
-          </button>
+
+          <button id="create-user-btn" class="wizard-btn submit">Создать</button>
         </div>
       </div>
     </div>

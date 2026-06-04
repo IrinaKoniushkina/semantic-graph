@@ -1,4 +1,4 @@
-// Утилиты: тосты, счётчики, валидация, стили
+// Тосты, счётчики, валидация, стили
 function showToast(text) {
     toast.textContent = text;
     toast.classList.add("show");

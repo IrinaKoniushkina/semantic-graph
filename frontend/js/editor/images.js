@@ -1,4 +1,4 @@
-// Работа с изображениями: превью, модальное окно, загрузка
+// Работа с изображениями
 function renderPreview() {
     preview.innerHTML = "";
     const all = [...existingImages, ...newImages];

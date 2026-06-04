@@ -1,4 +1,4 @@
-// Выбор/редактирование вершин, очистка формы, режимы add/edit
+// Выбор/редактирование вершин
 function showNameDropdown(filter = "") {
     nameDropdown.innerHTML = "";
     if (mode === "add" && !filter.trim()) {
@@ -137,7 +137,7 @@ function clearForm() {
     updateDisabledStyles();
 }
 
-// Работа с категориями
+// Категории
 function showAllCategories() {
     categoryDropdown.innerHTML = "";
     const results = allCategories.filter(c => !selectedCategories.includes(c));

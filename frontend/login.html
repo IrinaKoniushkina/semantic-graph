@@ -5,8 +5,15 @@
     <meta charset="UTF-8">
     <title>Вход</title>
     <link rel="stylesheet" href="css/editor.css">
+    <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,300..700;1,300..700&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" type="text/css" href="css/editor.css">
 </head>
 <style>
+    #login-form{
+        height: auto;
+    }
     .editor-box {
         width: 400px;
     }
@@ -43,16 +50,22 @@
     .sign-up{
         margin-bottom: 5px;
         text-align: center;
+        font-family: 'Cormorant Infant';
+        font-size: 35px;
     }
     .submit{
         position: relative;
-        left: 35%;
+        left: 27%;
+        margin-top: 30px;
+    }
+    h2{
+        margin-top: 0;
     }
 </style>
 
 <body>
     <div class="editor-box">
-        <h2 class="sign-up">Вход для редактора</h2>
+        <h2 class="sign-up">Авторизация</h2>
         <div id="login-error" class="login-error"></div>
         <form id="login-form">
 
@@ -64,7 +77,7 @@
                 <input type="password" id="password-input" placeholder="Введите пароль" name="password">
                 <a href="#" class="password-control" id="password-control"></a>
             </div>
-            <button class="submit">Войти</button>
+            <button class="submit" style="width: 150px;">Войти</button>
         </form>
     </div>
 

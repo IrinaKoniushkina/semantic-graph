@@ -1,14 +1,20 @@
-// Панель администратора: пользователи и история
+// Панель администратора
 async function initAdminInterface() {
     const userStr = localStorage.getItem("user");
-    if (!userStr) return;
+    const adminPanel = document.getElementById("admin-panel");
+    if (!userStr) {
+        adminPanel.style.display = "none";
+        return;
+    }
     const user = JSON.parse(userStr);
     if (user.role === "admin") {
         document.getElementById("tab-users").style.display = "inline-flex";
         document.getElementById("tab-history").style.display = "inline-flex";
+        adminPanel.style.display = "block";
+    } else {
+        adminPanel.style.display = "none";
     }
 }
-
 async function loadUsersPanel() {
     const token = localStorage.getItem("token");
     const res = await fetch("http://localhost:5000/users", {
@@ -27,8 +33,8 @@ async function loadUsersPanel() {
                 <div class="user-role">${user.role}</div>
             </div>
             <div class="user-actions">
-                <button class="admin-small-btn edit" onclick="changeUserRole('${user.id}', '${user.role}')">Сменить роль</button>
-                <button class="admin-small-btn delete" onclick="deleteUser('${user.id}')">Удалить</button>
+                <button class="admin-small-btn edit submit" onclick="changeUserRole('${user.id}')">Сменить роль</button>
+                <button class="admin-small-btn delete submit" onclick="deleteUser('${user.id}')">Удалить</button>
             </div>
         `;
         container.appendChild(card);
@@ -44,20 +50,59 @@ async function loadHistoryPanel() {
     const history = await res.json();
     const container = document.getElementById("history-list");
     container.innerHTML = "";
-    history.reverse().forEach(item => {
-        const card = document.createElement("div");
-        card.className = "history-card";
-        card.innerHTML = `
-            <div class="history-info">
-                <div class="history-action">${item.user}</div>
-                <div class="history-date">${item.action}</div>
-                <div class="history-date">${new Date(item.date).toLocaleString()}</div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
+    history
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .forEach(item => {
+            const card = document.createElement("div");
+            card.className = "history-card";
+            card.innerHTML = `
+                <div class="history-info">
+                    <div class="history-action">
+                        ${item.user}
+                    </div>
+                    <div class="history-target">
+                        ${item.action} — ${item.target}
+                    </div>
+                    <div class="history-date">
+                        ${new Date(item.date).toLocaleString()}
+                    </div>
+                    <div class="history-details" style="display:none">
+                    </div>
+                </div>
+            `;
+            const detailsBlock = card.querySelector(".history-details");
+            const targetElement = card.querySelector(".history-target")
+            container.appendChild(card);
 
+            if (item.action === "EDIT_NODE" && item.changes?.length) {
+                detailsBlock.innerHTML = item.changes
+                    .map(change => `
+                        <div class="history-change">
+                            <b>${change.field}</b><br>
+                            ${change.old}<br>
+                            ${change.new}
+                        </div>
+                    `)
+                    .join("");
+                targetElement.style.cursor = "pointer";
+            }
+            card.addEventListener("click", (e) => {
+                if (e.target.closest(".history-target")) return;
+                detailsBlock.style.display =
+                    detailsBlock.style.display === "none" ? "block" : "none";
+            });
+            targetElement.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const id = item.targetId;
+                console.log("click");
+                if (!id) return;
+                window.open(
+                    `/editor.html?node=${encodeURIComponent(id)}`,
+                    "_blank"
+                );
+            });
+        });
+}
 async function changeUserRole(id, currentRole) {
     const newRole = currentRole === "admin" ? "editor" : "admin";
     const token = localStorage.getItem("token");
@@ -71,7 +116,6 @@ async function changeUserRole(id, currentRole) {
         showToast("Роль изменена");
     }
 }
-
 async function deleteUser(id) {
     if (!confirm("Удалить пользователя?")) return;
     const token = localStorage.getItem("token");

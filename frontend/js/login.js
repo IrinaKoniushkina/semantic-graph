@@ -17,7 +17,6 @@ passwordControl.addEventListener("click", (e) => {
 
 form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     const loginInput = document.getElementById("login").value.trim();
     const password = document.getElementById("password-input").value.trim();
 
@@ -25,7 +24,6 @@ form.addEventListener("submit", async (e) => {
         errorDiv.textContent = "Введите логин и пароль";
         return;
     }
-
     try {
         const res = await fetch("http://localhost:5000/login", {
             method: "POST",
@@ -34,17 +32,14 @@ form.addEventListener("submit", async (e) => {
             },
             body: JSON.stringify({ login: loginInput, password })
         });
-
         const result = await res.json();
-
         if (res.ok && result.token) {
             errorDiv.textContent = "";
-            
             localStorage.setItem("auth", "true");
             localStorage.setItem("token", result.token);
             localStorage.setItem("user", JSON.stringify(result.user));
 
-            // Переход на редактор
+            //Переход на редактор
             window.location.href = "editor.html";
         } else {
             errorDiv.textContent = result.error || "Неверный логин или пароль";

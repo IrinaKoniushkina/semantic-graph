@@ -10,12 +10,11 @@ function isStep1Valid() {
 function isStep2Valid() {
     const hasRelations = selectedRelations.length > 0;
     const allImages = [...existingImages, ...newImages];
-    const hasImages = allImages.length > 0;
     const allCaptionsValid = allImages.every(img =>
         typeof img.caption === "string" &&
         img.caption.trim().length >= MIN_IMAGE_CAPTION
     );
-    return hasRelations && hasImages && allCaptionsValid;
+    return hasRelations && allCaptionsValid;
 }
 
 function isStep3Valid() {
@@ -54,6 +53,9 @@ function updateStepsUI() {
 
 function switchTab(tab) {
     currentTab = tab;
+    const formTitle = document.getElementById("title");
+    const modeToggle = document.getElementById("mode-edit");
+
     document.querySelectorAll(".tab-btn").forEach(btn => {
         btn.classList.toggle("active", btn.id === `tab-${tab}`);
     });
@@ -63,6 +65,30 @@ function switchTab(tab) {
     formEl.style.display = tab === "editor" ? "block" : "none";
     usersPanel.style.display = tab === "users" ? "block" : "none";
     historyPanel.style.display = tab === "history" ? "block" : "none";
+    if (tab === "editor") {
+        if (formTitle) {
+            formTitle.textContent = mode === "edit" ? "Редактирование вершины" : "Новая вершина";
+        }
+        if (modeToggle) {
+            modeToggle.style.display = "";
+        }
+
+    } else if (tab === "users") {
+        if (formTitle) {
+            formTitle.textContent = "Пользователи";
+        }
+        if (modeToggle) {
+            modeToggle.style.display = "none";
+        }
+    } else if (tab === "history") {
+        if (formTitle) {
+            formTitle.textContent = "История изменений";
+        }
+        if (modeToggle) {
+            modeToggle.style.display = "none";
+        }
+    }
+
     if (tab === "users") loadUsersPanel();
     if (tab === "history") loadHistoryPanel();
 }

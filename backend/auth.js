@@ -7,34 +7,24 @@ const driver = neo4j.driver(
 );
 
 const SECRET = "super-secret-key-2026";
-
 async function login(login, password) {
-
   const session = driver.session();
-
   try {
-
     const result = await session.run(
       `
-            MATCH (u:User {
-                login:$login,
-                password:$password
-            })
+      MATCH (u:User {
+          login:$login,
+          password:$password
+      })
 
-            RETURN u
-            `,
+      RETURN u
+      `,
       { login, password }
     );
-
     if (!result.records.length) {
       return null;
     }
-
-    const user =
-      result.records[0]
-        .get("u")
-        .properties;
-
+    const user = result.records[0].get("u").properties;
     const token = jwt.sign(
       {
         id: user.id,
@@ -44,10 +34,8 @@ async function login(login, password) {
       SECRET,
       { expiresIn: "24h" }
     );
-
     return {
-      token,
-      user: {
+      token, user: {
         id: user.id,
         login: user.login,
         role: user.role,
@@ -56,25 +44,17 @@ async function login(login, password) {
           user.login
       }
     };
-
   } finally {
-
     await session.close();
   }
 }
 
 function verifyToken(token) {
-
   try {
     return jwt.verify(token, SECRET);
   }
-
   catch {
     return null;
   }
 }
-
-module.exports = {
-  login,
-  verifyToken
-};
+module.exports = {login, verifyToken};

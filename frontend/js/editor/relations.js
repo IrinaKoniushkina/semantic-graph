@@ -1,4 +1,4 @@
-// Работа со связями
+//Связи
 function showAllRelation() {
     const q = relationSearch.value.toLowerCase();
     relationDropdown.innerHTML = "";
@@ -25,7 +25,7 @@ function addRelation(node, forcedType = null, forcedReason = "") {
     }
     const alreadyExists = selectedRelations.some(r => r.id === node.id && r.type === type);
     if (alreadyExists) return;
-    const relation = { id: node.id, type, reason: forcedReason || "" };
+    const relation = { id: node.id, name: node.name, type, reason: forcedReason || "" };
     selectedRelations.push(relation);
     const tag = document.createElement("div");
     const color = type === "geo" ? "#1C9284" : "#BC461B";
